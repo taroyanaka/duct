@@ -280,3 +280,69 @@ app.post('/delete_link', (req, res) => {
         error_response(res, '原因不明のエラー' + error);
     }
 });
+
+// tagにデータをレコード挿入するエンドポイント
+// 既に存在する場合は、既存のタグを返す
+// 存在しない場合は、新規にタグを作成して返す
+// 既存のタグを返す場合は、links_tagsにレコードを挿入する
+// 新規にタグを作成して返す場合は、tagsにレコードを挿入して、links_tagsにレコードを挿入する
+app.post('/insert_tag', (req, res) => {
+    try {
+        const user = get_user_with_permission(req);
+        user || user.writable ? null : error_response(res, '権限がありません');
+        const tag = db.prepare(`
+        SELECT id, tag FROM tags WHERE tag = ?
+        `).get(req.body.tag);
+        if (tag) {
+            const result = db.prepare(`
+            INSERT INTO links_tags (link_id, tag_id) VALUES (?, ?)
+            `).run(req.body.link_id, tag.id);
+            res.json(tag);
+        } else {
+            const result = db.prepare(`
+            INSERT INTO tags (tag) VALUES (?)
+            `).run(req.body.tag);
+            const tag = db.prepare(`
+            SELECT id, tag FROM tags WHERE tag = ?
+            `).get(req.body.tag);
+            const result2 = db.prepare(`
+            INSERT INTO links_tags (link_id, tag_id) VALUES (?, ?)
+            `).run(req.body.link_id, tag.id);
+            res.json(tag);
+        }
+    } catch (error) {
+        console.log(error);
+        error_response(res, '原因不明のエラー' + error);
+    }
+});
+
+// tagのデータを削除する
+// 他に紐づくlinkが有る場合は、links_tagsのレコードを削除する
+// 他に紐づくlinkが無い場合は、tagsのレコードとlinks_tagsのレコードを削除する
+app.post('/delete_tag', (req, res) => {
+    try {
+        const user = get_user_with_permission(req);
+        user || user.deletable ? null : error_response(res, '権限がありません');
+        const result = db.prepare(`
+        SELECT COUNT(*) AS count FROM links_tags WHERE tag_id = ?
+        `).get(req.body.id);
+        if (result.count > 1) {
+            const result2 = db.prepare(`
+            DELETE FROM links_tags WHERE tag_id = ? AND link_id = ?
+            `).run(req.body.id, req.body.link_id);
+            res.json(result2);
+        } else {
+            const result2 = db.prepare(`
+            DELETE FROM links_tags WHERE tag_id = ?
+            `).run(req.body.id);
+            const result3 = db.prepare(`
+            DELETE FROM tags WHERE id = ?
+            `).run(req.body.id);
+            res.json(result3);
+        }
+    } catch (error) {
+        console.log(error);
+        error_response(res, '原因不明のエラー' + error);
+    }
+});
+
