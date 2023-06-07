@@ -11,9 +11,8 @@ const port = 8000;
 app.listen(port, "0.0.0.0", () => console.log(`App listening!! at http://localhost:${port}`) );
 // app.listen(port, () => console.log(`App listening!! at http://localhost:${port}`) );
 app.get('/', (req, res) => {
-    const user = db.prepare('SELECT * FROM users WHERE id = ?').get(1);
     console.log('Hello World, this is the TEST mode!!!!');
-    console.log(JSON.stringify(user).length);
+    // console.log(JSON.stringify(user).length);
     res.json({message: 'Hello World, this is the TEST mode!!!!'});
 });
 

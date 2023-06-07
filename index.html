@@ -38,6 +38,7 @@ beforeMounte(){
 },
 mounted() {
     this.fn_1();
+    this.fetch_hello_world();
 },
 beforeUpdate() {
 },
@@ -50,6 +51,16 @@ fn_0(){
 fn_1(){
     console.log(JSON.parse(JSON.stringify(this.data_1)));
 },
+
+async fetch_hello_world(){
+    const res = await fetch(
+        // this.get_domain_and_port_of_test_mode_or_product_mode()
+        'http://localhost:8000/'
+    );
+    const data = await res.json(); console.log(data);
+    // await this.fetch_read_dups_parent();
+},
+
 },
 }).mount('.app');
 </script>
