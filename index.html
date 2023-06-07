@@ -4,11 +4,52 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>vue_3_starter</title>
+<script src="./lib/vue@3.2.36.global.prod.js"></script>
+<!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/3.2.36/vue.cjs.js"></script> -->
 </head>
-<body>
+<body class="app">
     <h1>duct</h1>
     <h2> :ja ductはlink共有とlinkへのコメントをするwebサービスです </h2>
     <h2> :en duct is a web service that allows you to share links and comment on them. </h2>
+
+<button @click="fn_0">fn_0</button>
+<template v-for="(DATA_VAL, DATA_IDX) in data_1">
+<div>{{ DATA_VAL }}</div>
+</template>
+<textarea name="" id="" cols="30" rows="10" v-model="data_0"></textarea>
 </body>
+<script>
+const app = Vue.createApp({
+data() {
+    return {
+data_0: 'ANY',
+data_1: [0,1,2],
+    }},
+watch: {
+   any: {
+     handler() {
+     },
+     deep: true
+   },
+},
+beforeMounte(){
+},
+mounted() {
+    this.fn_1();
+},
+beforeUpdate() {
+},
+updated() {
+},
+methods: {
+fn_0(){
+    console.log(this.data_0);
+},
+fn_1(){
+    console.log(JSON.parse(JSON.stringify(this.data_1)));
+},
+},
+}).mount('.app');
+</script>
 </html>
