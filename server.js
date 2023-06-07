@@ -186,30 +186,49 @@ app.post('/get_user_with_permission', (req, res) => {
     }
 });
 
-// read_all
+// linkテーブル以下のデータを取得する
 app.get('/read_all', (req, res) => {
   try {
     const pre_result = db.prepare(`
-      SELECT
-
-    `).all();
+    SELECT
+    links.id AS id, links.link AS link, links.created_at AS created_at, links.updated_at AS updated_at,
+    users.id AS user_id, users.username AS username,
+    (SELECT COUNT(*) FROM likes WHERE likes.link_id = links.id) AS like_count
+    FROM links
+    LEFT JOIN users ON links.user_id = users.id
+    LEFT JOIN likes ON links.id = likes.link_id
+    ORDER BY links.id DESC
+        `).all();
 
     const result = pre_result.map(parent => {
       const tags = db.prepare(`
         SELECT
-        WHERE brabra = ?
-      `).all(id);
+        tags.id AS id, tags.tag AS tag
+        FROM tags
+        LEFT JOIN links_tags ON tags.id = links_tags.tag_id
+        WHERE links_tags.link_id = ?
+      `).all(parent.id);
 
       const comments = db.prepare(`
-      SELECT
-      WHERE brabra = ?
-      `).all(id);
+        SELECT
+        comments.id AS id, comments.comment AS comment, comments.created_at AS created_at, comments.updated_at AS updated_at,
+        users.id AS user_id, users.username AS username
+        FROM comments
+        LEFT JOIN links ON comments.link_id = links.id
+        LEFT JOIN users ON comments.user_id = users.id
+        WHERE links.id = ?
+      `).all(parent.id);
 
         const comments_and_replies = comments.map(comment => {
             const comment_replies = db.prepare(`
             SELECT
-            WHERE brabra = ?    
-            `).all(id);
+            comment_replies.id AS id, comment_replies.comment AS comment, comment_replies.created_at AS created_at, comment_replies.updated_at AS updated_at,
+            users.id AS user_id, users.username AS username
+            FROM comment_replies
+            LEFT JOIN comments ON comment_replies.comment_id = comments.id
+            LEFT JOIN users ON comment_replies.user_id = users.id
+            WHERE comments.id = ?
+            `).all(comment.id);
             return {
                 ...comment,
                 comment_replies,
@@ -218,16 +237,46 @@ app.get('/read_all', (req, res) => {
 
       return {
         ...parent,
-        dups,
         tags,
         comments_and_replies,
       };
     });
 
+    // res.json(pre_result);
     res.json(result);
+    // console.log(result);
   } catch (error) {
     console.log(error);
     error_response(res, '原因不明のエラー' + error);
   }
 });
 
+// linkにデータをレコード挿入するエンドポイント
+app.post('/insert_link', (req, res) => {
+    try {
+        const user = get_user_with_permission(req);
+        user || user.writable ? null : error_response(res, '権限がありません');
+        const result = db.prepare(`
+        INSERT INTO links (user_id, link, created_at, updated_at) VALUES (?, ?, ?, ?)
+        `).run(user.user_id, req.body.link, now(), now());
+        res.json(result);
+    } catch (error) {
+        console.log(error);
+        error_response(res, '原因不明のエラー' + error);
+    }
+});
+
+// linkのデータを削除する
+app.post('/delete_link', (req, res) => {
+    try {
+        const user = get_user_with_permission(req);
+        user || user.deletable ? null : error_response(res, '権限がありません');
+        const result = db.prepare(`
+        DELETE FROM links WHERE id = ? AND user_id = ?
+        `).run(req.body.id, user.user_id);
+        res.json(result);
+    } catch (error) {
+        console.log(error);
+        error_response(res, '原因不明のエラー' + error);
+    }
+});

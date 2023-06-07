@@ -10,49 +10,73 @@
 <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/3.2.36/vue.cjs.js"></script> -->
 </head>
 <body class="app">
+    <!-- this.nameのinput:text -->
+    <input type="text" v-model="name" placeholder="name">
+    <!-- this.passwordのinput -->
+    <input type="password" v-model="password" placeholder="password">
+    <!-- this.linkのinput -->
+    <input type="url" v-model="link" placeholder="link">
+    <!-- fetch_insert_linkを実行するボタン -->
+    <button @click="fetch_insert_link">fetch_insert_link</button>
+
+
+<!-- web_dataをレンダリングする -->
+<template v-for="(DATA_VAL, DATA_IDX) in web_data">
+    <!-- 以下のプロパティを全てレンダリングする -->
+    <!--  { "id": 3, "link": "https://yanaka.dev/", "created_at": "2023-06-07T09:16:24.846Z", "updated_at": "2023-06-07T09:16:24.846Z", "user_id": 2, "username": "user1", "like_count": 0, "tags": [], "comments_and_replies": [] } -->
+    <div>{{ DATA_VAL.id }}</div>
+    <div>{{ DATA_VAL.link }}</div>
+    <div>{{ DATA_VAL.created_at }}</div>
+    <div>{{ DATA_VAL.updated_at }}</div>
+    <div>{{ DATA_VAL.user_id }}</div>
+    <div>{{ DATA_VAL.username }}</div>
+    <!-- like_count, tags, comments_and_replies に関しては空か空の配列の場合はレンダリングしない -->
+    <div v-if="DATA_VAL.like_count">{{ DATA_VAL.like_count }}</div>
+    <div v-if="DATA_VAL.tags.length">{{ DATA_VAL.tags }}</div>
+    <div v-if="DATA_VAL.comments_and_replies.length">{{ DATA_VAL.comments_and_replies }}</div>
+</template>
+
+
+
+
     <h1>duct</h1>
     <h2> :ja ductはlink共有とlinkへのコメントをするwebサービスです </h2>
     <h2> :en duct is a web service that allows you to share links and comment on them. </h2>
 
-<button @click="fn_0">fn_0</button>
+<!-- <button @click="fn_0">fn_0</button>
 <template v-for="(DATA_VAL, DATA_IDX) in data_1">
 <div>{{ DATA_VAL }}</div>
 </template>
-<textarea name="" id="" cols="30" rows="10" v-model="data_0"></textarea>
+<textarea name="" id="" cols="30" rows="10" v-model="data_0"></textarea> -->
 </body>
 <script>
 const app = Vue.createApp({
 data() {
     return {
-data_0: 'ANY',
-data_1: [0,1,2],
+name: 'user1',
+password: 'user_pass1',
+web_data: {},
+link: 'https://yanaka.dev/',
     }},
 watch: {
-   any: {
-     handler() {
-     },
-     deep: true
-   },
+//    any: {
+//      handler() {
+//      },
+//      deep: true
+//    },
 },
 beforeMounte(){
 },
 mounted() {
-    this.fn_1();
     // this.fetch_hello_world();
-    this.fetch_get_user_with_permission();
+    // this.fetch_get_user_with_permission();
+    this.fetch_read_all();
 },
 beforeUpdate() {
 },
 updated() {
 },
 methods: {
-fn_0(){
-    console.log(this.data_0);
-},
-fn_1(){
-    console.log(JSON.parse(JSON.stringify(this.data_1)));
-},
-
 async fetch_hello_world(){
     const res = await fetch(
         // this.get_domain_and_port_of_test_mode_or_product_mode()
@@ -64,14 +88,126 @@ async fetch_hello_world(){
 async fetch_get_user_with_permission(){
     const res = await fetch('http://localhost:8000' + '/get_user_with_permission', {method: 'POST',headers: {'Content-Type': 'application/json',},
         body: JSON.stringify({
-            name: 'user1',
-            password: 'user_pass1'
-            // name: this.name,
-            // password: this.password
+            name: this.name,
+            password: this.password
         }),
     });
     const data = await res.json(); console.log(data);
 },
+
+// // linkテーブル以下のデータを取得する
+// app.get('/read_all', (req, res) => {
+//   try {
+//     const pre_result = db.prepare(`
+//         SELECT
+//         link.id AS id, link.title AS title, link.link AS link, link.created_at AS created_at, link.updated_at AS updated_at,
+//         users.id AS user_id, users.username AS username,
+//         (SELECT COUNT(*) FROM likes WHERE likes.link_id = link.id) AS like_count
+//         FROM link
+//         LEFT JOIN users ON link.user_id = users.id
+//         LEFT JOIN likes ON link.id = likes.link_id
+//         ORDER BY link.id DESC
+//     `).all();
+
+//     const result = pre_result.map(parent => {
+//       const tags = db.prepare(`
+//         SELECT
+//         tags.id AS id, tags.tag AS tag
+//         FROM tags
+//         LEFT JOIN link_tags ON tags.id = link_tags.tag_id
+//         WHERE link_tags.link_id = ?
+//       `).all(parent.id);
+
+//       const comments = db.prepare(`
+//         SELECT
+//         comments.id AS id, comments.comment AS comment, comments.created_at AS created_at, comments.updated_at AS updated_at,
+//         users.id AS user_id, users.username AS username
+//         FROM comments
+//         LEFT JOIN links ON comments.link_id = links.id
+//         LEFT JOIN users ON comments.user_id = users.id
+//         WHERE links.id = ?
+//       `).all(parent.id);
+
+//         const comments_and_replies = comments.map(comment => {
+//             const comment_replies = db.prepare(`
+//             SELECT
+//             comment_replies.id AS id, comment_replies.comment AS comment, comment_replies.created_at AS created_at, comment_replies.updated_at AS updated_at,
+//             users.id AS user_id, users.username AS username
+//             FROM comment_replies
+//             LEFT JOIN comments ON comment_replies.comment_id = comments.id
+//             LEFT JOIN users ON comment_replies.user_id = users.id
+//             WHERE comments.id = ?
+//             `).all(comment.id);
+//             return {
+//                 ...comment,
+//                 comment_replies,
+//             }
+//         });
+
+//       return {
+//         ...parent,
+//         tags,
+//         comments_and_replies,
+//       };
+//     });
+
+//     res.json(result);
+//   } catch (error) {
+//     console.log(error);
+//     error_response(res, '原因不明のエラー' + error);
+//   }
+// });
+
+// read_allをfetchする関数
+async fetch_read_all(){
+    const res = await fetch('http://localhost:8000' + '/read_all', {method: 'GET', headers: {'Content-Type': 'application/json',},
+        // body: JSON.stringify({
+        //     name: this.name,
+        //     password: this.password
+        // }),
+    });
+    this.web_data = await res.json(); console.log(this.web_data);
+},
+
+// // linkにデータをレコード挿入するエンドポイント
+// app.post('/insert_link', (req, res) => {
+//     try {
+//         const user = get_user_with_permission(req);
+//         user || user.writable ? null : error_response(res, '権限がありません');
+//         const result = db.prepare(`
+//         INSERT INTO link (user_id, link, created_at, updated_at) VALUES (?, ?, ?, ?, ?)
+//         `).run(user.user_id, req.body.link, now(), now());
+//         res.json(result);
+//     } catch (error) {
+//         console.log(error);
+//         error_response(res, '原因不明のエラー' + error);
+//     }
+// });
+async fetch_insert_link(){
+    const res = await fetch('http://localhost:8000' + '/insert_link', {method: 'POST',headers: {'Content-Type': 'application/json',},
+        body: JSON.stringify({
+            name: this.name,
+            password: this.password,
+            link: this.link
+        }),
+    });
+    const data = await res.json(); console.log(data);
+},
+
+// // linkのデータを削除する
+// app.post('/delete_link', (req, res) => {
+//     try {
+//         const user = get_user_with_permission(req);
+//         user || user.deletable ? null : error_response(res, '権限がありません');
+//         const result = db.prepare(`
+//         DELETE FROM link WHERE id = ? AND user_id = ?
+//         `).run(req.body.id, user.user_id);
+//         res.json(result);
+//     } catch (error) {
+//         console.log(error);
+//         error_response(res, '原因不明のエラー' + error);
+//     }
+// });
 
 },
 }).mount('.app');
