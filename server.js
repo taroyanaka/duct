@@ -281,6 +281,7 @@ app.post('/delete_link', (req, res) => {
     }
 });
 
+
 // tagにデータをレコード挿入するエンドポイント
 // 既に存在する場合は、既存のタグを返す
 // 存在しない場合は、新規にタグを作成して返す
@@ -288,6 +289,28 @@ app.post('/delete_link', (req, res) => {
 // 新規にタグを作成して返す場合は、tagsにレコードを挿入して、links_tagsにレコードを挿入する
 app.post('/insert_tag', (req, res) => {
     try {
+        // tagは記号を含む場合はエラー、空白を含む場合はエラー、7文字以上はエラー、既に存在する場合はエラー、SQLの予約語を含む場合はエラー
+        const error_check = (tag) => {
+            const reserved_words = ['SELECT', 'FROM', 'WHERE', 'INSERT', 'DELETE', 'UPDATE', 'DROP', 'ALTER', 'CREATE', 'TABLE', 'INTO', 'VALUES', 'AND', 'OR', 'NOT', 'NULL', 'TRUE', 'FALSE'];
+            if (tag.match(/[!-/:-@[-`{-~]/g)) {
+                return false;
+            } else if (tag.match(/\s/g)) {
+                return false;
+            } else if (tag.length > 7) {
+                return false;
+            } else if (reserved_words.includes(tag)) {
+                return false;
+            } else {
+                return true;
+            }
+        }
+        error_check(req.body.tag) ? null : error_response(res,
+            `tagは、
+            記号を含む場合はエラー、
+            空白を含む場合はエラー、
+            7文字以上はエラー、
+            既に存在する場合はエラー、
+            SQLの予約語を含む場合はエラー`);
         const user = get_user_with_permission(req);
         user || user.writable ? null : error_response(res, '権限がありません');
         const tag = db.prepare(`
