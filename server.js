@@ -289,28 +289,32 @@ app.post('/delete_link', (req, res) => {
 // 新規にタグを作成して返す場合は、tagsにレコードを挿入して、links_tagsにレコードを挿入する
 app.post('/insert_tag', (req, res) => {
     try {
-        // tagは記号を含む場合はエラー、空白を含む場合はエラー、7文字以上はエラー、既に存在する場合はエラー、SQLの予約語を含む場合はエラー
+        // tagは記号を含む場合はエラー、空白を含む場合はエラー、7文字以上はエラー、既に存在する場合はエラー、SQLの予約語の場合はエラー
         const error_check = (tag) => {
             const reserved_words = ['SELECT', 'FROM', 'WHERE', 'INSERT', 'DELETE', 'UPDATE', 'DROP', 'ALTER', 'CREATE', 'TABLE', 'INTO', 'VALUES', 'AND', 'OR', 'NOT', 'NULL', 'TRUE', 'FALSE'];
-            if (tag.match(/[!-/:-@[-`{-~]/g)) {
-                return false;
+            if (tag === undefined) {
+                return {res: 'tagが空です', status: false};
+            } else if (tag.match(/[!-/:-@[-`{-~]/g)) {
+                return {res: '記号を含む場合はエラー', status: false};
             } else if (tag.match(/\s/g)) {
-                return false;
+                return {res: '空白を含む場合はエラー', status: false};
             } else if (tag.length > 7) {
-                return false;
+                return {res: '7文字以上はエラー', status: false};
             } else if (reserved_words.includes(tag)) {
-                return false;
+                return {res: 'SQLの予約語を含む場合はエラー', status: false};
             } else {
-                return true;
+                return {res: 'OK', status: true};
             }
         }
-        error_check(req.body.tag) ? null : error_response(res,
-            `tagは、
-            記号を含む場合はエラー、
-            空白を含む場合はエラー、
-            7文字以上はエラー、
-            既に存在する場合はエラー、
-            SQLの予約語を含む場合はエラー`);
+        const error_check_result = error_check(req.body.tag);
+        error_check_result.status ? null : error_response(res,
+            error_check_result.res);
+            // `tagは、
+            // 記号を含む場合はエラー、
+            // 空白を含む場合はエラー、
+            // 7文字以上はエラー、
+            // 既に存在する場合はエラー、
+            // SQLの予約語を含む場合はエラー`);
         const user = get_user_with_permission(req);
         user || user.writable ? null : error_response(res, '権限がありません');
         const tag = db.prepare(`
@@ -318,7 +322,7 @@ app.post('/insert_tag', (req, res) => {
         `).get(req.body.tag);
         if (tag) {
             const result = db.prepare(`
-            INSERT INTO links_tags (link_id, tag_id) VALUES (?, ?)
+            INSERT INTO links_tags (link_id, tag_id, created_at, updated_at) VALUES (?, ?, ?, ?)
             `).run(req.body.link_id, tag.id);
             res.json(tag);
         } else {
@@ -329,8 +333,8 @@ app.post('/insert_tag', (req, res) => {
             SELECT id, tag FROM tags WHERE tag = ?
             `).get(req.body.tag);
             const result2 = db.prepare(`
-            INSERT INTO links_tags (link_id, tag_id) VALUES (?, ?)
-            `).run(req.body.link_id, tag.id);
+            INSERT INTO links_tags (link_id, tag_id, created_at, updated_at) VALUES (?, ?, ?, ?)
+            `).run(req.body.link_id, tag.id, now(), now());
             res.json(tag);
         }
     } catch (error) {

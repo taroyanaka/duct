@@ -34,9 +34,10 @@
     <div>{{ DATA_VAL.username }}</div>
     <!-- like_count, tags, comments_and_replies に関しては空か空の配列の場合はレンダリングしない -->
     <div v-if="DATA_VAL.like_count">{{ DATA_VAL.like_count }}</div>
-    <div v-if="DATA_VAL.tags.length">{{ DATA_VAL.tags }}</div>
+    <!-- <div v-if="DATA_VAL.tags.length">{{ DATA_VAL.tags }}</div> -->
+    <div>{{ DATA_VAL.tags }}</div>
     <!-- fetch_insert_tagでタグを挿入するためのinput:text -->
-    <input type="text" v-model="tag" placeholder="tag" maxlength="7" minlength="1">
+    <input type="text" v-model="tag" placeholder="tag" maxlength="7" minlength="1" @input="tag_check($event.target.value)">
     <!-- fetch_insert_tagを実行するボタン -->
     <button @click="fetch_insert_tag(DATA_VAL.id)">fetch_insert_tag</button>
         <!-- tags配列をレンダリングする -->
@@ -73,6 +74,7 @@ name: 'user1',
 password: 'user_pass1',
 web_data: {},
 link: 'https://yanaka.dev/',
+tag: 'tag1',
     }},
 watch: {
 //    any: {
@@ -297,10 +299,31 @@ async fetch_insert_tag(LINK_ID, TAG){
             name: this.name,
             password: this.password,
             link_id: LINK_ID,
-            tag: TAG
+            tag: this.tag
         }),
     });
     const data = await res.json(); console.log(data);
+},
+tag_check(TAG){
+        // tagは記号を含む場合はエラー、空白を含む場合はエラー、7文字以上はエラー、既に存在する場合はエラー、SQLの予約語の場合はエラー
+        const error_check = (tag) => {
+            const reserved_words = ['SELECT', 'FROM', 'WHERE', 'INSERT', 'DELETE', 'UPDATE', 'DROP', 'ALTER', 'CREATE', 'TABLE', 'INTO', 'VALUES', 'AND', 'OR', 'NOT', 'NULL', 'TRUE', 'FALSE'];
+            if (tag === undefined) {
+                return {res: 'tagが空です', status: false};
+            } else if (tag.match(/[!-/:-@[-`{-~]/g)) {
+                return {res: '記号を含む場合はエラー', status: false};
+            } else if (tag.match(/\s/g)) {
+                return {res: '空白を含む場合はエラー', status: false};
+            } else if (tag.length > 7) {
+                return {res: '7文字以上はエラー', status: false};
+            } else if (reserved_words.includes(tag)) {
+                return {res: 'SQLの予約語を含む場合はエラー', status: false};
+            } else {
+                return {res: 'OK', status: true};
+            }
+        }
+        // console.log(error_check(TAG));
+        return error_check(TAG);
 },
 
 // // tagのデータを削除する
@@ -343,6 +366,8 @@ async fetch_delete_tag(LINK_ID, TAG_ID){
     });
     const data = await res.json(); console.log(data);
 },
+
+
 
 
 
