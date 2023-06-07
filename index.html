@@ -38,7 +38,8 @@ beforeMounte(){
 },
 mounted() {
     this.fn_1();
-    this.fetch_hello_world();
+    // this.fetch_hello_world();
+    this.fetch_get_user_with_permission();
 },
 beforeUpdate() {
 },
@@ -58,7 +59,18 @@ async fetch_hello_world(){
         'http://localhost:8000/'
     );
     const data = await res.json(); console.log(data);
-    // await this.fetch_read_dups_parent();
+},
+
+async fetch_get_user_with_permission(){
+    const res = await fetch('http://localhost:8000' + '/get_user_with_permission', {method: 'POST',headers: {'Content-Type': 'application/json',},
+        body: JSON.stringify({
+            name: 'user1',
+            password: 'user_pass1'
+            // name: this.name,
+            // password: this.password
+        }),
+    });
+    const data = await res.json(); console.log(data);
 },
 
 },
