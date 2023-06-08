@@ -296,35 +296,6 @@ app.post('/like_increment_or_decrement', (req, res) => {
     }
 });
 
-// linkに紐づくcommentをインクリメントする
-app.post('/insert_comment', (req, res) => {
-    try {
-        const user = get_user_with_permission(req);
-        user || user.commentable ? null : (()=>{throw new Error('権限がありません')})();
-        const result = db.prepare(`
-        INSERT INTO comments (user_id, link_id, comment, created_at, updated_at) VALUES (?, ?, ?, ?, ?)
-        `).run(user.user_id, req.body.link_id, req.body.comment, now(), now());
-        res.json(result);
-    } catch (error) {
-        console.log(error);
-        error_response(res, '原因不明のエラー' + error);
-    }
-});
-
-// commentに紐づくcomment_replyをインクリメントする
-app.post('/insert_comment_reply', (req, res) => {
-    try {
-        const user = get_user_with_permission(req);
-        user || user.commentable ? null : (()=>{throw new Error('権限がありません')})();
-        const result = db.prepare(`
-        INSERT INTO comment_replies (user_id, comment_id, comment, created_at, updated_at) VALUES (?, ?, ?, ?, ?)
-        `).run(user.user_id, req.body.comment_id, req.body.comment, now(), now());
-        res.json(result);
-    } catch (error) {
-        console.log(error);
-        error_response(res, '原因不明のエラー' + error);
-    }
-});
 
 
 // tagにデータをレコード挿入するエンドポイント
@@ -439,6 +410,8 @@ app.post('/delete_comment', (req, res) => {
     try {
         const user = get_user_with_permission(req);
         user || user.commentable ? null : (()=>{throw new Error('権限がありません')})();
+        // commentに紐づくcomment_replyがある場合は、comment_replyのレコードを削除する
+        db.prepare(`DELETE FROM comment_replies WHERE comment_id = ? AND user_id = ?`).run(req.body.id, user.user_id);
         db.prepare(`DELETE FROM comments WHERE id = ? AND user_id = ?`).run(req.body.id, user.user_id);
         res.json({message: 'success'});
     } catch (error) {
