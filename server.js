@@ -370,20 +370,21 @@ app.post('/insert_tag', (req, res) => {
 // tagのデータを削除する
 // 他に紐づくlinkが有る場合は、links_tagsのレコードを削除する
 // 他に紐づくlinkが無い場合は、tagsのレコードとlinks_tagsのレコードを削除する
-app.post('/delete_tag', (req, res) => {
-    try {
-        const user = get_user_with_permission(req);
-        user || user.deletable ? null : (()=>{throw new Error('権限がありません')})();
-        const result = db.prepare(`SELECT COUNT(*) AS count FROM links_tags WHERE tag_id = ?`).get(req.body.id);
-        result.count > 1
-            ? db.prepare(`DELETE FROM links_tags WHERE tag_id = ? AND link_id = ?`).run(req.body.id, req.body.link_id)
-            : (db.prepare(`DELETE FROM links_tags WHERE tag_id = ?`).run(req.body.id), db.prepare(`DELETE FROM tags WHERE id = ?`).run(req.body.id));
-    res.json({message: 'success'});
-    } catch (error) {
-        console.log(error);
-        error_response(res, '原因不明のエラー' + error);
-    }
-});
+//   // tagの所有権(tagを作成したユーザー、もしくはlinkにタグを追加したユーザー)の仕様が決まらないため、一旦コメントアウト
+// app.post('/delete_tag', (req, res) => {
+//     try {
+//         const user = get_user_with_permission(req);
+//         user || user.deletable ? null : (()=>{throw new Error('権限がありません')})();
+//         const result = db.prepare(`SELECT COUNT(*) AS count FROM links_tags WHERE tag_id = ?`).get(req.body.id);
+//         result.count > 1
+//             ? db.prepare(`DELETE FROM links_tags WHERE tag_id = ? AND link_id = ?`).run(req.body.id, req.body.link_id)
+//             : (db.prepare(`DELETE FROM links_tags WHERE tag_id = ?`).run(req.body.id), db.prepare(`DELETE FROM tags WHERE id = ?`).run(req.body.id));
+//     res.json({message: 'success'});
+//     } catch (error) {
+//         console.log(error);
+//         error_response(res, '原因不明のエラー' + error);
+//     }
+// });
 
 
 // commentsのデータを挿入する
@@ -426,7 +427,7 @@ app.post('/delete_comment', (req, res) => {
     try {
         const user = get_user_with_permission(req);
         user || user.commentable ? null : (()=>{throw new Error('権限がありません')})();
-        db.prepare(`DELETE FROM comments WHERE id = ?`).run(req.body.id);
+        db.prepare(`DELETE FROM comments WHERE id = ? AND user_id = ?`).run(req.body.id, user.user_id);
         res.json({message: 'success'});
     } catch (error) {
         console.log(error);
@@ -463,6 +464,18 @@ app.post('/insert_comment_reply', (req, res) => {
         db.prepare(`SELECT COUNT(*) AS count FROM comment_replies WHERE user_id = ? AND comment_id = ?`).get(user.user_id, req.body.comment_id).count > 0 ? (()=>{throw new Error('既に同じcomment_replyが存在する場合はエラー')})() : null;
 
         const result = db.prepare(`INSERT INTO comment_replies (user_id, comment_id, comment_reply, created_at, updated_at) VALUES (?, ?, ?, ?, ?)`).run(user.user_id, req.body.comment_id, req.body.comment_reply, now(), now());
+        res.json({message: 'success'});
+    } catch (error) {
+        console.log(error);
+        error_response(res, '原因不明のエラー' + error);
+    }
+});
+
+app.post('/delete_comment_reply', (req, res) => {
+    try {
+        const user = get_user_with_permission(req);
+        user || user.commentable ? null : (()=>{throw new Error('権限がありません')})();
+        db.prepare(`DELETE FROM comment_replies WHERE id = ? AND user_id = ?`).run(req.body.id, user.user_id);
         res.json({message: 'success'});
     } catch (error) {
         console.log(error);
