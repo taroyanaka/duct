@@ -367,6 +367,19 @@ app.post('/insert_tag', (req, res) => {
     }
 });
 
+app.post('/get_tags_for_autocomplete', (req, res) => {
+    try {
+    console.log(req.body.tag);
+    const user = get_user_with_permission(req);
+    user.readable === 1 ? null : (()=>{throw new Error('読み込み権限がありません')})();
+    const tags = db.prepare(`SELECT * FROM tags WHERE tag LIKE '%${req.body.tag}%' LIMIT 100`).all();
+    res.json({message: 'success', tags});
+    } catch (error) {
+    console.log(error);
+    error_response(res, 'ERROR: ' + error);
+    }
+});
+
 // tagのデータを削除する
 // 他に紐づくlinkが有る場合は、links_tagsのレコードを削除する
 // 他に紐づくlinkが無い場合は、tagsのレコードとlinks_tagsのレコードを削除する
@@ -482,3 +495,4 @@ app.post('/delete_comment_reply', (req, res) => {
         error_response(res, '原因不明のエラー' + error);
     }
 });
+
