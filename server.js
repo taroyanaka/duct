@@ -175,17 +175,6 @@ app.get('/', (req, res) => {
     res.json({message: 'Hello World, this is the TEST mode!!!!'});
 });
 
-// get_user_with_permission
-app.post('/get_user_with_permission', (req, res) => {
-    try {
-        // console.log('get_user_with_permission');
-        const result = get_user_with_permission(req);
-        res.json(result);
-    } catch (error) {
-        console.log(error);
-        error_response(res, error);
-    }
-});
 
 // linkテーブル以下のデータを取得する
 app.get('/read_all', (req, res) => {
@@ -272,9 +261,19 @@ app.post('/delete_link', (req, res) => {
     try {
         const user = get_user_with_permission(req);
         user || user.deletable ? null : (()=>{throw new Error('権限がありません')})();
-        const result = db.prepare(`
-        DELETE FROM links WHERE id = ? AND user_id = ?
-        `).run(req.body.id, user.user_id);
+        // linkに紐づくlike、comment、comment_replyを削除する
+        db.prepare(`DELETE FROM likes WHERE link_id = ? AND user_id = ?`).run(req.body.id, user.user_id);
+        db.prepare(`DELETE FROM comment_replies WHERE link_id = ? AND user_id = ?`).run(req.body.id, user.user_id);
+        db.prepare(`DELETE FROM comments WHERE link_id = ? AND user_id = ?`).run(req.body.id, user.user_id);
+        // linkに紐づくlinks_tagsを削除し、tagが他のlinkに紐づいていなければ、tagも削除する
+        const tags = db.prepare(`SELECT * FROM links_tags WHERE link_id = ?`).all(req.body.id) || [];
+        tags.forEach(tag => {
+            const tag_links = db.prepare(`SELECT * FROM links_tags WHERE tag_id = ?`).all(tag.tag_id);
+            tag_links.length === 1 ? db.prepare(`DELETE FROM tags WHERE id = ?`).run(tag.tag_id) : null;
+        });
+        db.prepare(`DELETE FROM links_tags WHERE link_id = ?`).run(req.body.id);
+        // linkを削除する
+        const result = db.prepare(`DELETE FROM links WHERE id = ? AND user_id = ?`).run(req.body.id, user.user_id);
         res.json(result);
     } catch (error) {
         console.log(error);

@@ -87,7 +87,6 @@ beforeMounte(){
 },
 mounted() {
     // this.fetch_hello_world();
-    // this.fetch_get_user_with_permission();
     this.fetch_read_all();
 },
 beforeUpdate() {
@@ -103,15 +102,6 @@ async fetch_hello_world(){
     const data = await res.json(); console.log(data);
 },
 
-async fetch_get_user_with_permission(){
-    const res = await fetch('http://localhost:8000' + '/get_user_with_permission', {method: 'POST',headers: {'Content-Type': 'application/json',},
-        body: JSON.stringify({
-            name: this.name,
-            password: this.password
-        }),
-    });
-    const data = await res.json(); console.log(data);
-},
 
 // // linkテーブル以下のデータを取得する
 // app.get('/read_all', (req, res) => {
