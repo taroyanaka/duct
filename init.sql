@@ -59,7 +59,7 @@ CREATE TABLE likes (
   user_id INTEGER NOT NULL,
   created_at DATETIME NOT NULL,
   updated_at DATETIME NOT NULL,
-  FOREIGN KEY (link_id) REFERENCES link(id)
+  FOREIGN KEY (link_id) REFERENCES links(id)
 );
 
 -- linksとtagsの中間テーブル
@@ -84,7 +84,7 @@ CREATE TABLE comments (
   comment TEXT NOT NULL,
   created_at DATETIME NOT NULL,
   updated_at DATETIME NOT NULL,
-  FOREIGN KEY (link_id) REFERENCES link(id)
+  FOREIGN KEY (link_id) REFERENCES links(id)
 );
 
 CREATE TABLE comment_replies (

@@ -209,10 +209,10 @@ app.get('/read_all', (req, res) => {
         WHERE links.id = ?
       `).all(parent.id);
 
-        const comments_and_replies = comments.map(comment => {
+        const comments_and_replies = (comments ? comments : []).map(comment => {
             const comment_replies = db.prepare(`
             SELECT
-            comment_replies.id AS id, comment_replies.comment AS comment, comment_replies.created_at AS created_at, comment_replies.updated_at AS updated_at,
+            comment_replies.id AS id, comment_replies.reply AS reply, comment_replies.created_at AS created_at, comment_replies.updated_at AS updated_at,
             users.id AS user_id, users.username AS username
             FROM comment_replies
             LEFT JOIN comments ON comment_replies.comment_id = comments.id
@@ -220,7 +220,7 @@ app.get('/read_all', (req, res) => {
             WHERE comments.id = ?
             `).all(comment.id);
             return {
-                ...comment,
+                ...comments,
                 comment_replies,
             }
         });
@@ -286,10 +286,11 @@ app.post('/like_increment_or_decrement', (req, res) => {
     try {
         const user = get_user_with_permission(req);
         user || user.likable ? null : (()=>{throw new Error('権限がありません')})();
-        db.prepare(`SELECT * FROM likes WHERE user_id = ? AND link_id = ?`).get(user.user_id, req.body.link_id)
+        console.log(req.body.link_id, user.user_id);
+        const result = db.prepare(`SELECT * FROM likes WHERE user_id = ? AND link_id = ?`).get(user.user_id, req.body.link_id)
             ? db.prepare(`DELETE FROM likes WHERE user_id = ? AND link_id = ?`).run(user.user_id, req.body.link_id)
             : db.prepare(`INSERT INTO likes (user_id, link_id, created_at, updated_at) VALUES (?, ?, ?, ?)`).run(user.user_id, req.body.link_id, now(), now());
-        res.json({message: 'success'});
+        res.json({message: 'success', result: result});
     } catch (error) {
         console.log(error);
         error_response(res, '原因不明のエラー' + error);
@@ -411,13 +412,13 @@ app.post('/delete_comment', (req, res) => {
         const user = get_user_with_permission(req);
         user || user.commentable ? null : (()=>{throw new Error('権限がありません')})();
         // commentに紐づくcomment_replyがある場合は、comment_replyのレコードを削除す
-        db.prepare(`SELECT * FROM comment_replies WHERE comment_id = ? AND user_id = ?`).get(req.body.id, user.user_id)
+        db.prepare(`SELECT * FROM comment_replies WHERE comment_id = ? AND user_id = ?`).get(req.body.comment_id, user.user_id)
             ?
-            db.prepare(`DELETE FROM comment_replies WHERE comment_id = ? AND user_id = ?`).run(req.body.id, user.user_id)
-            : (()=>{throw new Error('権限がありません')})();
-        db.prepare(`SELECT * FROM comments WHERE id = ? AND user_id = ?`).get(req.body.id, user.user_id)
+            db.prepare(`DELETE FROM comment_replies WHERE comment_id = ? AND user_id = ?`).run(req.body.comment_id, user.user_id)
+            : null;
+        db.prepare(`SELECT * FROM comments WHERE id = ? AND user_id = ?`).get(req.body.comment_id, user.user_id)
             ?
-            db.prepare(`DELETE FROM comments WHERE id = ? AND user_id = ?`).run(req.body.id, user.user_id)
+            db.prepare(`DELETE FROM comments WHERE id = ? AND user_id = ?`).run(req.body.comment_id, user.user_id)
             : (()=>{throw new Error('権限がありません')})();
         res.json({message: 'success'});
     } catch (error) {
