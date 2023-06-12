@@ -455,7 +455,7 @@ app.post('/insert_comment_reply', (req, res) => {
 
         db.prepare(`SELECT COUNT(*) AS count FROM comment_replies WHERE user_id = ? AND comment_id = ?`).get(user.user_id, req.body.comment_id).count > 0 ? (()=>{throw new Error('既に同じcomment_replyが存在する場合はエラー')})() : null;
 
-        const result = db.prepare(`INSERT INTO comment_replies (user_id, comment_id, comment_reply, created_at, updated_at) VALUES (?, ?, ?, ?, ?)`).run(user.user_id, req.body.comment_id, req.body.comment_reply, now(), now());
+        const result = db.prepare(`INSERT INTO comment_replies (user_id, comment_id, reply, created_at, updated_at) VALUES (?, ?, ?, ?, ?)`).run(user.user_id, req.body.comment_id, req.body.comment_reply, now(), now());
         res.json({message: 'success'});
     } catch (error) {
         console.log(error);
@@ -467,9 +467,9 @@ app.post('/delete_comment_reply', (req, res) => {
     try {
         const user = get_user_with_permission(req);
         user || user.commentable ? null : (()=>{throw new Error('権限がありません')})();
-        db.prepare(`SELECT * FROM comment_replies WHERE id = ? AND user_id = ?`).get(req.body.id, user.user_id)
+        db.prepare(`SELECT * FROM comment_replies WHERE id = ? AND user_id = ?`).get(req.body.comment_reply_id, user.user_id)
             ?
-            db.prepare(`DELETE FROM comment_replies WHERE id = ? AND user_id = ?`).run(req.body.id, user.user_id)
+            db.prepare(`DELETE FROM comment_replies WHERE id = ? AND user_id = ?`).run(req.body.comment_reply_id, user.user_id)
             : (()=>{throw new Error('権限がありません')})();
         res.json({message: 'success'});
     } catch (error) {
