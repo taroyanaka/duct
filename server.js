@@ -1,3 +1,33 @@
+// package.json for glitch.com
+
+// {
+//     "name": "web_service",
+//     "version": "1.0.0",
+//     "description": "",
+//     "main": "server.js",
+//     "scripts": {
+//       "start": "node server.js",
+//       "test": "echo \"Error: no test specified\" && exit 1"
+//     },
+//     "author": "",
+//     "license": "ISC",
+//     "dependencies": {
+//       "better-sqlite3": "^8.4.0",
+//       "cors": "^2.8.5",
+//       "express": "^4.18.2",
+//       "ramda": "^0.29.0",
+//       "validator": "^13.9.0",
+//       "body-parser": "^1.20.2"
+//     },
+//      "engines": {
+//         "node": "16.x"
+//     }
+//   }
+  
+
+
+
+
 // -- sqlite3で全てのテーブルとそのデータを削除するクエリ
 // DROP TABLE IF EXISTS user_permission;
 // DROP TABLE IF EXISTS users;
