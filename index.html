@@ -10,6 +10,7 @@
 <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/3.2.36/vue.cjs.js"></script> -->
 </head>
 <body class="app">
+    <button @click="fetch_hello">fetch_hello</button>
     <!-- this.nameのinput:text -->
     <input type="text" v-model="name" placeholder="name">
     <!-- this.passwordのinput -->
@@ -96,11 +97,12 @@ beforeUpdate() {
 updated() {
 },
 methods: {
-async fetch_hello_world(){
-    const res = await fetch(
-        // this.get_domain_and_port_of_test_mode_or_product_mode()
-        'http://localhost:8000/'
-    );
+
+// read_allをfetchする関数
+async fetch_hello(){
+    const res = await fetch('http://localhost:8000' + '/test', {method: 'POST',headers: {'Content-Type': 'application/json',},
+        body: JSON.stringify({ name: this.name, password: this.password, link: this.link }),
+    });
     const data = await res.json(); console.log(data);
 },
 

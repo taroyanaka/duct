@@ -188,22 +188,47 @@ const now = () => new Date().toISOString();
 // expressの一般的なエラーのレスポンス。引数としてエラー文字列を含めて呼び出す
 const error_response = (res, error_message) => res.json({error: error_message});
 
-const get_user_with_permission = (REQ) =>  db.prepare(`
-SELECT users.id AS user_id, users.username AS username, user_permission.permission AS user_permission,
-user_permission.deletable AS deletable,
-user_permission.writable AS writable,
-user_permission.readable AS readable,
-user_permission.likable AS likable,
-user_permission.commentable AS commentable
-FROM users
-LEFT JOIN user_permission ON users.user_permission_id = user_permission.id
-WHERE users.username = ? AND users.userpassword = ?
-`).get(REQ.body.name, REQ.body.password);
+const get_user_with_permission = (REQ) => {
+    // overwrite_password関数はID/PASSWORDの秘匿化のための応急処置として使用する
+    // glitch.comにおいてpravateな情報を扱う場合は、.dataフォルダに格納する
+    // REQ.body.nameがlines[0]と一致し、
+    // REQ.body.passwordがlines[2]と一致する場合に
+    // REQ.body.passwordをlines[1]に書き換える関数
+    // overwrite_passwordを一行関数で
+    const overwrite_password = (REQ) => {
+        const FILE_NAME = './.data/for_overwriting_id_password.csv';
+        // csvファイルを読み込んで','でsplitしてconsole.logする
+        const fs = require('fs');
+        const line = fs.readFileSync(FILE_NAME, 'utf8').split(',');    
+        const result = REQ.body.name === line[0] && REQ.body.password === line[2] ? line[1] : REQ.body.password;
+        return [REQ.body.name, result];
+    };
+    // 本番環境においてはoverwrite_passwordを実行
+    // [REQ.body.name, REQ.body.password] = overwrite_password(req, line);
+
+    return db.prepare(`
+    SELECT users.id AS user_id, users.username AS username, user_permission.permission AS user_permission,
+    user_permission.deletable AS deletable,
+    user_permission.writable AS writable,
+    user_permission.readable AS readable,
+    user_permission.likable AS likable,
+    user_permission.commentable AS commentable
+    FROM users
+    LEFT JOIN user_permission ON users.user_permission_id = user_permission.id
+    WHERE users.username = ? AND users.userpassword = ?
+    `).get(REQ.body.name, REQ.body.password)
+};
 
 app.get('/', (req, res) => {
     console.log('Hello World, this is the TEST mode!!!!');
     res.json({message: 'Hello World, this is the TEST mode!!!!'});
 });
+
+app.post('/test', (req, res) => {
+    console.log('Hello World, this is the TEST mode!!!!');
+    res.json({message: 'Hello World, this is the TEST mode!!!!'});
+});
+
 
 
 // linkテーブル以下のデータを取得する
@@ -373,7 +398,10 @@ app.post('/get_tags_for_autocomplete', (req, res) => {
     console.log(req.body.tag);
     const user = get_user_with_permission(req);
     user.readable === 1 ? null : (()=>{throw new Error('読み込み権限がありません')})();
-    const tags = db.prepare(`SELECT * FROM tags WHERE tag LIKE '%${req.body.tag}%' LIMIT 100`).all();
+    const tags = 
+        req.body.tag === undefined ?
+            db.prepare(`SELECT * FROM tags LIMIT 100`).all() :
+            db.prepare(`SELECT * FROM tags WHERE tag LIKE '%${req.body.tag}%' LIMIT 100`).all();
     res.json({message: 'success', tags});
     } catch (error) {
     console.log(error);
