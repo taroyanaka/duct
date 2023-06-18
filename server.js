@@ -230,20 +230,88 @@ app.post('/test', (req, res) => {
 });
 
 
-
-// linkテーブル以下のデータを取得する
-app.get('/read_all', (req, res) => {
-  try {
-    const pre_result = db.prepare(`
+app.get('/read_all_test', (req, res) => {
+    // req.query.tagがある場合cross tableでtagsテーブルを結合する
+    tag_join_option = req.query.tag ? ' LEFT JOIN links_tags ON links.id = links_tags.link_id LEFT JOIN tags ON links_tags.tag_id = tags.id' : '';
+    const STANDARD_READ_QUERY = `
     SELECT
     links.id AS id, links.link AS link, links.created_at AS created_at, links.updated_at AS updated_at,
     users.id AS user_id, users.username AS username,
     (SELECT COUNT(*) FROM likes WHERE likes.link_id = links.id) AS like_count
     FROM links
     LEFT JOIN users ON links.user_id = users.id
-    LEFT JOIN likes ON links.id = likes.link_id
-    ORDER BY links.id DESC
-        `).all();
+    LEFT JOIN likes ON links.id = likes.link_id`
+    + tag_join_option 
+    ;
+    // req.bodyに ASC,DESC,TAG,USERがある場合は、それぞれの条件に合わせてSQL文を変更する関数
+    const read_query = (req) => {
+        const ORDER_BY = req.query.order_by ? req.query.order_by : 'DESC';
+        const ORDER_BY_COLUMN = req.query.order_by_column ? req.query.order_by_column : 'links.id';
+        const REQ_TAG = req.query.tag ? req.query.tag : null;
+        const USER = req.query.user ? req.query.user : null;
+        const WHERE_TAG = REQ_TAG ? `WHERE tags.tag = '${REQ_TAG}'` : '';
+        const WHERE_USER = USER ? `WHERE users.username = '${USER}'` : '';
+        const WHERE_TAG_AND_USER = REQ_TAG && USER ? `WHERE tags.tag = '${REQ_TAG}' AND users.username = '${USER}'` : '';
+        const WHERE_TAG_OR_USER = REQ_TAG || USER ? `WHERE tags.tag = '${REQ_TAG}' OR users.username = '${USER}'` : '';
+        const WHERE = WHERE_TAG_AND_USER || WHERE_TAG_OR_USER || WHERE_TAG || WHERE_USER;
+        // クエリを生成する(nullの場合は、クエリを生成しない)
+        const QUERY = WHERE ? `${STANDARD_READ_QUERY} ${WHERE} ORDER BY ${ORDER_BY_COLUMN} ${ORDER_BY}` : `${STANDARD_READ_QUERY} ORDER BY ${ORDER_BY_COLUMN} ${ORDER_BY}`;
+        return QUERY;
+    };
+
+    // const REQ_TAG = req.query.tag ? req.query.tag : null;
+    console.log(req.query);
+    // console.log(REQ_TAG);
+    // console.log(read_query(req));
+    const result = db.prepare(read_query(req)).all();
+    console.log(result);
+});
+
+
+// linkテーブル以下のデータを取得する
+app.get('/read_all', (req, res) => {
+  try {
+    // const STANDARD_READ_QUERY = `
+    // SELECT
+    // links.id AS id, links.link AS link, links.created_at AS created_at, links.updated_at AS updated_at,
+    // users.id AS user_id, users.username AS username,
+    // (SELECT COUNT(*) FROM likes WHERE likes.link_id = links.id) AS like_count
+    // FROM links
+    // LEFT JOIN users ON links.user_id = users.id
+    // LEFT JOIN likes ON links.id = likes.link_id
+    // ORDER BY links.id DESC`;
+
+
+    // req.query.tagがある場合cross tableでtagsテーブルを結合する
+    tag_join_option = req.query.tag ? ' LEFT JOIN links_tags ON links.id = links_tags.link_id LEFT JOIN tags ON links_tags.tag_id = tags.id' : '';
+    const STANDARD_READ_QUERY = `
+    SELECT
+    links.id AS id, links.link AS link, links.created_at AS created_at, links.updated_at AS updated_at,
+    users.id AS user_id, users.username AS username,
+    (SELECT COUNT(*) FROM likes WHERE likes.link_id = links.id) AS like_count
+    FROM links
+    LEFT JOIN users ON links.user_id = users.id
+    LEFT JOIN likes ON links.id = likes.link_id`
+    + tag_join_option 
+    ;
+    // req.bodyに ASC,DESC,TAG,USERがある場合は、それぞれの条件に合わせてSQL文を変更する関数
+    const read_query = (req) => {
+        const ORDER_BY = req.query.order_by ? req.query.order_by : 'DESC';
+        const ORDER_BY_COLUMN = req.query.order_by_column ? req.query.order_by_column : 'links.id';
+        const REQ_TAG = req.query.tag ? req.query.tag : null;
+        const USER = req.query.user ? req.query.user : null;
+        const WHERE_TAG = REQ_TAG ? `WHERE tags.tag = '${REQ_TAG}'` : '';
+        const WHERE_USER = USER ? `WHERE users.username = '${USER}'` : '';
+        const WHERE_TAG_AND_USER = REQ_TAG && USER ? `WHERE tags.tag = '${REQ_TAG}' AND users.username = '${USER}'` : '';
+        const WHERE_TAG_OR_USER = REQ_TAG || USER ? `WHERE tags.tag = '${REQ_TAG}' OR users.username = '${USER}'` : '';
+        const WHERE = WHERE_TAG_AND_USER || WHERE_TAG_OR_USER || WHERE_TAG || WHERE_USER;
+        // クエリを生成する(nullの場合は、クエリを生成しない)
+        const QUERY = WHERE ? `${STANDARD_READ_QUERY} ${WHERE} ORDER BY ${ORDER_BY_COLUMN} ${ORDER_BY}` : `${STANDARD_READ_QUERY} ORDER BY ${ORDER_BY_COLUMN} ${ORDER_BY}`;
+        return QUERY;
+    };
+
+    // const pre_result = db.prepare(STANDARD_READ_QUERY).all();
+    const pre_result = db.prepare(read_query(req)).all();
 
     const result = pre_result.map(parent => {
       const tags = db.prepare(`
