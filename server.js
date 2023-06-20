@@ -169,25 +169,29 @@
 const R = require('ramda');
 const express = require('express');
 const sqlite = require('better-sqlite3');
+
 const db = new sqlite('./duct.sqlite3');
 const app = express();
 const bodyParser = require('body-parser');
 app.use(bodyParser.json());
 const cors = require('cors');
-const e = require('express');
 app.use(cors());
 const port = 8000;
 app.listen(port, "0.0.0.0", () => console.log(`App listening!! at http://localhost:${port}`) );
 // app.listen(port, () => console.log(`App listening!! at http://localhost:${port}`) );
 
 const now = () => new Date().toISOString();
-// expressの一般的なエラーのレスポンス。引数としてエラー文字列を含めて呼び出す
-const error_response = (res, error_message) => res.json({error: error_message});
+// expressの一般的なエラーのレスポンス。引数としてエラー文字列を含めて呼び出す。statusコードも含めて返す
+const error_response = (res, status_code, error_message) => res.status(status_code).json({error: error_message});
 
 
-const add = (a,b) => a + b;
 
 
+
+// en: should return null with invalid credentials
+// ja: 無効な認証情報でnullを返すべき
+// en: should return null with non-existent username
+// ja: 存在しないユーザー名でnullを返すべき
 const get_user_with_permission = (REQ) => {
     // overwrite_password関数はID/PASSWORDの秘匿化のための応急処置として使用する
     // glitch.comにおいてpravateな情報を扱う場合は、.dataフォルダに格納する
@@ -206,6 +210,29 @@ const get_user_with_permission = (REQ) => {
     // 本番環境においてはoverwrite_passwordを実行
     // [REQ.body.name, REQ.body.password] = overwrite_password(req, line);
 
+    // 無効な認証情報でnullを返す
+    if (REQ.body.name === '' || REQ.body.password === '' || REQ.body.name === undefined || REQ.body.password === undefined || REQ.body.name === null || REQ.body.password === null
+        || REQ.body.name.length > 20 || REQ.body.password.length > 20 || REQ.body.name.length < 4 || REQ.body.password.length < 4
+        || REQ.body.name.includes(' ') || REQ.body.password.includes(' ')
+        || REQ.body.name.includes('　') || REQ.body.password.includes('　')
+    ) {
+        return null;
+    }
+    //  存在しないユーザー名でnullを返す
+    if (db.prepare(`
+    SELECT users.id AS user_id, users.username AS username, user_permission.permission AS user_permission,
+    user_permission.deletable AS deletable,
+    user_permission.writable AS writable,
+    user_permission.readable AS readable,
+    user_permission.likable AS likable,
+    user_permission.commentable AS commentable
+    FROM users
+    LEFT JOIN user_permission ON users.user_permission_id = user_permission.id
+    WHERE users.username = ? AND users.userpassword = ?
+    `).get(REQ.body.name, REQ.body.password) === undefined) {
+        return null;
+    }
+
     return db.prepare(`
     SELECT users.id AS user_id, users.username AS username, user_permission.permission AS user_permission,
     user_permission.deletable AS deletable,
@@ -218,6 +245,7 @@ const get_user_with_permission = (REQ) => {
     WHERE users.username = ? AND users.userpassword = ?
     `).get(REQ.body.name, REQ.body.password)
 };
+
 
 app.get('/', (req, res) => {
     console.log('Hello World, this is the TEST mode!!!!');
@@ -327,45 +355,45 @@ app.get('/read_all', (req, res) => {
   }
 });
 
-// linkにデータをレコード挿入するエンドポイント
-app.post('/insert_link', (req, res) => {
-    try {
-        const WHITE_LIST_URL_ARRAY = [
-            'https://www.yahoo.co.jp/',
-            'https://www.google.co.jp/',
-            'https://www.youtube.com/',
-        ];
-        // URLの配列の文字列から始まる場合はtrueを返す関数を1行で
-        const is_include_WHITE_LIST_URL = (target_url_str, WHITE_LIST_URL_ARRAY) => WHITE_LIST_URL_ARRAY.some((WHITE_LIST_URL) => target_url_str.startsWith(WHITE_LIST_URL));
-        const error_check = (tag) => {
-            const reserved_words = ['SELECT', 'FROM', 'WHERE', 'INSERT', 'DELETE', 'UPDATE', 'DROP', 'ALTER', 'CREATE', 'TABLE', 'INTO', 'VALUES', 'AND', 'OR', 'NOT', 'NULL', 'TRUE', 'FALSE'];
-            switch (true) {
-                case link === undefined: return {res: 'linkが空です', status: false};
-                case !link.match(/^(https?|ftp)(:\/\/[-_.!~*\'()a-zA-Z0-9;\/?:\@&=+\$,%#]+)$/): return {res: 'URLの形式が正しくありません', status: false}; // URLの正規表現
-                case !is_include_WHITE_LIST_URL(link, WHITE_LIST_URL_ARRAY): return {res: '許可されていないURLです', status: false};
-                case link.length > 300: return {res: '300文字以上はエラー', status: false};
-                case reserved_words.includes(link): return {res: 'SQLの予約語を含む場合はエラー', status: false};
-                default: return {res: 'OK', status: true};
-            }
-        }
-        const error_check_result = error_check(req.body.link);
-        error_check_result.status ? null : (()=>{throw new Error(error_check_result.res)})();
+// // linkにデータをレコード挿入するエンドポイント
+// app.post('/insert_link', (req, res) => {
+//     try {
+//         const WHITE_LIST_URL_ARRAY = [
+//             'https://www.yahoo.co.jp/',
+//             'https://www.google.co.jp/',
+//             'https://www.youtube.com/',
+//         ];
+//         // URLの配列の文字列から始まる場合はtrueを返す関数を1行で
+//         const is_include_WHITE_LIST_URL = (target_url_str, WHITE_LIST_URL_ARRAY) => WHITE_LIST_URL_ARRAY.some((WHITE_LIST_URL) => target_url_str.startsWith(WHITE_LIST_URL));
+//         const error_check = (tag) => {
+//             const reserved_words = ['SELECT', 'FROM', 'WHERE', 'INSERT', 'DELETE', 'UPDATE', 'DROP', 'ALTER', 'CREATE', 'TABLE', 'INTO', 'VALUES', 'AND', 'OR', 'NOT', 'NULL', 'TRUE', 'FALSE'];
+//             switch (true) {
+//                 case link === undefined: return {res: 'linkが空です', status: false};
+//                 case !link.match(/^(https?|ftp)(:\/\/[-_.!~*\'()a-zA-Z0-9;\/?:\@&=+\$,%#]+)$/): return {res: 'URLの形式が正しくありません', status: false}; // URLの正規表現
+//                 case !is_include_WHITE_LIST_URL(link, WHITE_LIST_URL_ARRAY): return {res: '許可されていないURLです', status: false};
+//                 case link.length > 300: return {res: '300文字以上はエラー', status: false};
+//                 case reserved_words.includes(link): return {res: 'SQLの予約語を含む場合はエラー', status: false};
+//                 default: return {res: 'OK', status: true};
+//             }
+//         }
+//         const error_check_result = error_check(req.body.link);
+//         error_check_result.status ? null : (()=>{throw new Error(error_check_result.res)})();
 
-        const user = get_user_with_permission(req);
-        user || user.writable ? null : (()=>{throw new Error('権限がありません')})();
-        // 同じlinkが存在するなら、エラーを返す
-        const link_exists = db.prepare(`SELECT * FROM links WHERE link = ?`).get(req.body.link);
-        link_exists ? (()=>{throw new Error('同じlinkが存在します')})() : null;
+//         const user = get_user_with_permission(req);
+//         user || user.writable ? null : (()=>{throw new Error('権限がありません')})();
+//         // 同じlinkが存在するなら、エラーを返す
+//         const link_exists = db.prepare(`SELECT * FROM links WHERE link = ?`).get(req.body.link);
+//         link_exists ? (()=>{throw new Error('同じlinkが存在します')})() : null;
 
-        const result = db.prepare(`
-        INSERT INTO links (user_id, link, created_at, updated_at) VALUES (?, ?, ?, ?)
-        `).run(user.user_id, req.body.link, now(), now());
-        res.json(result);
-    } catch (error) {
-        console.log(error);
-        error_response(res, '原因不明のエラー' + error);
-    }
-});
+//         const result = db.prepare(`
+//         INSERT INTO links (user_id, link, created_at, updated_at) VALUES (?, ?, ?, ?)
+//         `).run(user.user_id, req.body.link, now(), now());
+//         res.json(result);
+//     } catch (error) {
+//         console.log(error);
+//         error_response(res, '原因不明のエラー' + error);
+//     }
+// });
 
 // linkのデータを削除する
 app.post('/delete_link', (req, res) => {
@@ -592,4 +620,142 @@ app.post('/delete_comment_reply', (req, res) => {
     }
 });
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+const WHITE_LIST_URL_ARRAY = [
+    'https://www.yahoo.co.jp/',
+    'https://www.google.co.jp/',
+    'https://www.youtube.com/',
+];
+
+const error_check_for_insert_link = (link) => {
+    const WHITE_LIST_URL_ARRAY = [
+        'https://www.yahoo.co.jp/',
+        'https://www.google.co.jp/',
+        'https://www.youtube.com/',
+    ];    
+    const reserved_words = ['SELECT', 'FROM', 'WHERE', 'INSERT', 'DELETE', 'UPDATE', 'DROP', 'ALTER', 'CREATE', 'TABLE', 'INTO', 'VALUES', 'AND', 'OR', 'NOT', 'NULL', 'TRUE', 'FALSE'];
+    const is_include_WHITE_LIST_URL = (target_url_str) => WHITE_LIST_URL_ARRAY.some((WHITE_LIST_URL) => target_url_str.startsWith(WHITE_LIST_URL));
+    switch (true) {
+        case link === undefined: return {res: 'linkが空です', status: 400}; break;
+        case reserved_words.includes(link): return {res: 'SQLの予約語を含む場合はエラー', status: 400}; break;
+        case !link.match(/^(https)(:\/\/[-_.!~*\'()a-zA-Z0-9;\/?:\@&=+\$,%#]+)$/): return {res: 'URLの形式が正しくありません', status: 400}; break;
+        case link.length > 2000: return {res: 'URLが長すぎます', status: 400}; break;
+        case !is_include_WHITE_LIST_URL(link): return {res: '許可されていないURLです', status: 400}; break;
+        default: return {res: 'OK', status: 200}; break;
+    }
+};
+// linkにデータをレコード挿入するエンドポイント
+// 正しいリンクが挿入されたときに200を返しresultをjsonで返す
+// リンクが空のときに400 Bad Requestを返す
+// リンクが正しいURLの形式でないときに400 Bad Requestを返す
+// リンクがホワイトリストに含まれていないときに403 Forbiddenを返す
+// リンクが300文字より長いときに400 Bad Requestを返す
+// リンクがSQLの予約語を含むときに400 Bad Requestを返す
+// リンクがすでにデータベースに存在するときに400 Bad Requestを返す
+// ユーザーがログインしていないときに401 Unauthorizedを返す
+// ユーザーが書き込み権限を持っていないときに403 Forbiddenを返す
+app.post('/insert_link', (req, res) => {
+    try {
+        // console.log(req.body.link);
+        const error_check_result = error_check_for_insert_link(req.body.link);
+        console.log("error_check_result");
+        console.log(error_check_result);
+        // error_check_result.status === 200 ? null : (()=>{throw new Error(error_check_result.res)})();
+        error_check_result.status === 200 ? null : (()=>{throw new Error(error_check_result)})();
+
+        const user = get_user_with_permission(req);
+        user || user.writable ? null : (()=>{throw new Error('権限がありません')})();
+        // 同じlinkが存在するなら、エラーを返す
+        const link_exists = db.prepare(`SELECT * FROM links WHERE link = ?`).get(req.body.link);
+        link_exists ? (()=>{throw new Error('同じlinkが存在します')})() : null;
+
+        const result = db.prepare(`
+        INSERT INTO links (user_id, link, created_at, updated_at) VALUES (?, ?, ?, ?)
+        `).run(user.user_id, req.body.link, now(), now());
+
+        // console.log(result);
+        res.status(200)
+            .json(result);
+    } catch (error) {
+        console.log(error);
+        res.status(error.status).json({error: error.res});
+    }
+});
+
+
+// test.jsのためにexportする
 module.exports = app;
