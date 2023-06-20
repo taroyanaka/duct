@@ -23,9 +23,6 @@
 //         "node": "16.x"
 //     }
 //   }
-  
-
-
 
 
 // -- sqlite3で全てのテーブルとそのデータを削除するクエリ
@@ -37,7 +34,6 @@
 // DROP TABLE IF EXISTS tags;
 // DROP TABLE IF EXISTS comments;
 // DROP TABLE IF EXISTS comment_replies;
-
 
 // -- ja: データ制限量
 // -- en: Data limit
@@ -235,17 +231,6 @@ app.post('/test', (req, res) => {
 // linkテーブル以下のデータを取得する
 app.get('/read_all', (req, res) => {
   try {
-    // const STANDARD_READ_QUERY = `
-    // SELECT
-    // links.id AS id, links.link AS link, links.created_at AS created_at, links.updated_at AS updated_at,
-    // users.id AS user_id, users.username AS username,
-    // (SELECT COUNT(*) FROM likes WHERE likes.link_id = links.id) AS like_count
-    // FROM links
-    // LEFT JOIN users ON links.user_id = users.id
-    // LEFT JOIN likes ON links.id = likes.link_id
-    // ORDER BY links.id DESC`;
-
-
     // req.query.tagがある場合cross tableでtagsテーブルを結合する
     tag_join_option = req.query.tag ? ' LEFT JOIN links_tags ON links.id = links_tags.link_id LEFT JOIN tags ON links_tags.tag_id = tags.id' : '';
     const STANDARD_READ_QUERY = `
@@ -256,7 +241,7 @@ app.get('/read_all', (req, res) => {
     FROM links
     LEFT JOIN users ON links.user_id = users.id
     LEFT JOIN likes ON links.id = likes.link_id`
-    + tag_join_option 
+    + tag_join_option
     ;
     // req.bodyに ASC,DESC,TAG,USERがある場合は、それぞれの条件に合わせてSQL文を変更する関数
     const read_query = (req) => {
@@ -341,8 +326,33 @@ app.get('/read_all', (req, res) => {
 // linkにデータをレコード挿入するエンドポイント
 app.post('/insert_link', (req, res) => {
     try {
+        const WHITE_LIST_URL_ARRAY = [
+            'https://www.yahoo.co.jp/',
+            'https://www.google.co.jp/',
+            'https://www.youtube.com/',
+        ];
+        // URLの配列の文字列から始まる場合はtrueを返す関数を1行で
+        const is_include_WHITE_LIST_URL = (target_url_str, WHITE_LIST_URL_ARRAY) => WHITE_LIST_URL_ARRAY.some((WHITE_LIST_URL) => target_url_str.startsWith(WHITE_LIST_URL));
+        const error_check = (tag) => {
+            const reserved_words = ['SELECT', 'FROM', 'WHERE', 'INSERT', 'DELETE', 'UPDATE', 'DROP', 'ALTER', 'CREATE', 'TABLE', 'INTO', 'VALUES', 'AND', 'OR', 'NOT', 'NULL', 'TRUE', 'FALSE'];
+            switch (true) {
+                case link === undefined: return {res: 'linkが空です', status: false};
+                case !link.match(/^(https?|ftp)(:\/\/[-_.!~*\'()a-zA-Z0-9;\/?:\@&=+\$,%#]+)$/): return {res: 'URLの形式が正しくありません', status: false}; // URLの正規表現
+                case !is_include_WHITE_LIST_URL(link, WHITE_LIST_URL_ARRAY): return {res: '許可されていないURLです', status: false};
+                case link.length > 300: return {res: '300文字以上はエラー', status: false};
+                case reserved_words.includes(link): return {res: 'SQLの予約語を含む場合はエラー', status: false};
+                default: return {res: 'OK', status: true};
+            }
+        }
+        const error_check_result = error_check(req.body.link);
+        error_check_result.status ? null : (()=>{throw new Error(error_check_result.res)})();
+
         const user = get_user_with_permission(req);
         user || user.writable ? null : (()=>{throw new Error('権限がありません')})();
+        // 同じlinkが存在するなら、エラーを返す
+        const link_exists = db.prepare(`SELECT * FROM links WHERE link = ?`).get(req.body.link);
+        link_exists ? (()=>{throw new Error('同じlinkが存在します')})() : null;
+
         const result = db.prepare(`
         INSERT INTO links (user_id, link, created_at, updated_at) VALUES (?, ?, ?, ?)
         `).run(user.user_id, req.body.link, now(), now());
