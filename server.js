@@ -167,6 +167,7 @@
 
 
 const R = require('ramda');
+const validator = require('validator');
 const express = require('express');
 const sqlite = require('better-sqlite3');
 
@@ -693,14 +694,6 @@ app.post('/delete_comment_reply', (req, res) => {
 
 
 
-
-
-const WHITE_LIST_URL_ARRAY = [
-    'https://www.yahoo.co.jp/',
-    'https://www.google.co.jp/',
-    'https://www.youtube.com/',
-];
-
 const error_check_for_insert_link = (link) => {
     const WHITE_LIST_URL_ARRAY = [
         'https://www.yahoo.co.jp/',
@@ -712,8 +705,10 @@ const error_check_for_insert_link = (link) => {
     switch (true) {
         case link === undefined: return {res: 'linkが空です', status: 400}; break;
         case reserved_words.includes(link): return {res: 'SQLの予約語を含む場合はエラー', status: 400}; break;
-        case !link.match(/^(https)(:\/\/[-_.!~*\'()a-zA-Z0-9;\/?:\@&=+\$,%#]+)$/): return {res: 'URLの形式が正しくありません', status: 400}; break;
+        // URLが2000文字より大きい時はエラー
         case link.length > 2000: return {res: 'URLが長すぎます', status: 400}; break;
+        // リンクが正しいURLの形式でないときに400 Bad Requestを返す。validator.jsを使ってチェックする break;
+        case !validator.isURL(link): return {res: 'URLの形式が正しくありません', status: 400}; break;
         case !is_include_WHITE_LIST_URL(link): return {res: '許可されていないURLです', status: 400}; break;
         default: return {res: 'OK', status: 200}; break;
     }

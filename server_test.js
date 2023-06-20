@@ -7,6 +7,7 @@ const app = express();
 
 
 
+// test.js OK
 
 // en: should return null with invalid credentials
 // ja: 無効な認証情報でnullを返すべき
@@ -67,6 +68,8 @@ const get_user_with_permission = (REQ) => {
 };
 
 
+// test.js OK
+
 // linkにデータをレコード挿入するエンドポイント
 // 正しいリンクが挿入されたときに200を返しresultをjsonで返す
 // リンクが空のときに400 Bad Requestを返す
@@ -77,7 +80,6 @@ const get_user_with_permission = (REQ) => {
 // リンクがすでにデータベースに存在するときに400 Bad Requestを返す
 // ユーザーがログインしていないときに401 Unauthorizedを返す
 // ユーザーが書き込み権限を持っていないときに403 Forbiddenを返す
-
 const error_check_for_insert_link = (link) => {
     const WHITE_LIST_URL_ARRAY = [
         'https://www.yahoo.co.jp/',
@@ -98,13 +100,16 @@ const error_check_for_insert_link = (link) => {
     }
 };
 app.post('/insert_link', (req, res) => {
-    try {        
+    try {
+        // test.js OK
         const error_check_result = error_check_for_insert_link(req.body.link);
         error_check_result.status === 200 ? null : (()=>{throw new Error(error_check_result)})();
 
+        // test.js OK
         const user = get_user_with_permission(req);
         user || user.writable ? null : (()=>{throw new Error({res: 'ユーザーが書き込み権限を持っていません', status: 403})})();
 
+        // test.js OK
         // 同じlinkが存在するなら、エラーを返す
         const link_exists = db.prepare(`SELECT * FROM links WHERE link = ?`).get(req.body.link);
         link_exists ? (()=>{throw new Error({res: '同じリンクがすでに存在します', status: 400})})()
