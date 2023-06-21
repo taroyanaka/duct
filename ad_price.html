@@ -12,10 +12,10 @@
 </head>
 <body>
   <div id="app">
-    <h2>{{changeLanguage('広告収入', current_language)}}</h2>
-
+    <h2>{{changeLanguage('広告収入計算', current_language)}}</h2>
     <div>
       <select name="" id="" @change="change_current_language($event.target.value)">
+        <option value=""></option>
         <option v-for="lang in langs" :value="lang[0]">{{ lang[2] }}</option>
       </select>  
     </div>
@@ -43,6 +43,7 @@ const app = Vue.createApp({
     const current_lang_array = Vue.ref(['en', 'US', '🇺🇸']);
 
     const langs = [
+      ['ja', 'JP', '🇯🇵'],
       ['en', 'US', '🇺🇸'],
       ['zh', 'CN', '🇨🇳🇹🇼'],
       ['ko', 'KR', '🇰🇷'],
@@ -52,7 +53,6 @@ const app = Vue.createApp({
       ['it', 'IT', '🇮🇹'],
       ['ru', 'RU', '🇷🇺'],
       ['pt', 'PT', '🇵🇹'],
-      ['ja', 'JP', '🇯🇵'],
     ];
   // get_paramでこのサイトのURLのパラメータを取得する。paramはlang=jaのようにな理、jaの部分を取得する
   const get_param = () => {
@@ -68,7 +68,7 @@ const app = Vue.createApp({
       return null;
     }
   };
-  let current_language = get_param() ? get_param() : 'en';
+  let current_language = get_param() ? get_param() : 'ja';
 
   // langのパラメーターをつけたURLを作り、それを開く
   function change_current_language(lang){
@@ -155,18 +155,6 @@ function changeLanguage(word, lang) {
           ['ru', 'Рассчитать'],
           ['pt', 'Calcular'],
         ],
-        [ 
-          ['ja', '広告収入'],
-          ['en', 'Ad revenue'],
-          ['zh', '广告收入'],
-          ['ko', '광고 수익'],
-          ['es', 'Ingresos por publicidad'],
-          ['fr', 'Revenus publicitaires'],
-          ['de', 'Werbeeinnahmen'],
-          ['it', 'Ricavo pubblicitario'],
-          ['ru', 'Доход от рекламы'],
-          ['pt', 'Receita de anúncios'],
-        ],
         [
           ['ja', '計算してください'],
           ['en', 'Please calculate'],
@@ -216,9 +204,6 @@ function changeLanguage(word, lang) {
 
     Vue.watch([views, duration, revenue, video], () => {
       calculateAdRevenue();
-    });
-    Vue.watch([current_language], () => {
-      changeLanguage();
     });
 
     return {
