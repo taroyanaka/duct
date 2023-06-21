@@ -54,7 +54,8 @@ const app = Vue.createApp({
       ['ru', 'RU', '🇷🇺'],
       ['pt', 'PT', '🇵🇹'],
     ];
-  // get_paramでこのサイトのURLのパラメータを取得する。paramはlang=jaのようにな理、jaの部分を取得する
+
+    // get_paramでこのサイトのURLのパラメータを取得する。paramはlang=jaのようにな理、jaの部分を取得する
   const get_param = () => {
     try {
       const url = window.location.href;
@@ -79,9 +80,8 @@ const app = Vue.createApp({
     }
   }
 
-    // 言語を変更する関数
+// 言語を変更する関数
 function changeLanguage(word, lang) {
-      // current_languageによって表示するの結果を変える
       const all_lang = [
         [ 
           ['ja', '広告収入計算'],
