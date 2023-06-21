@@ -26,7 +26,7 @@
     <input type="number" id="duration" min="0" v-model="duration" /><br />
     <label for="revenue">{{changeLanguage('単位再生あたりの収益（円）', current_language)}}</label>
     <input type="number" id="revenue" min="0" v-model="revenue" /><br />
-    <label for="video">{{changeLanguage('動画本数（本）', current_language)}}</label>
+    <label for="video">{{changeLanguage('動画本数', current_language)}}</label>
     <input type="number" id="video" min="0" v-model="video" /><br />
     <button type="button" @click="calculateAdRevenue()">{{changeLanguage('計算する', current_language)}}</button>
     <div>{{ adRevenue === null ? changeLanguage('計算してください', current_language) : adRevenue + changeLanguage('円', current_language) }}</div>
@@ -132,16 +132,16 @@ function changeLanguage(word, lang) {
           ['pt', 'Receita por visualização unitária (iene)'],
         ],
         [ 
-          ['ja', '動画本数（本）'],
-          ['en', 'Number of videos (books)'],
-          ['zh', '视频数量（本）'],
-          ['ko', '동영상 수 (권)'],
-          ['es', 'Número de videos (libros)'],
-          ['fr', 'Nombre de vidéos (livres)'],
-          ['de', 'Anzahl der Videos (Bücher)'],
-          ['it', 'Numero di video (libri)'],
-          ['ru', 'Количество видео (книги)'],
-          ['pt', 'Número de vídeos (livros)'],
+          ['ja', '動画本数'],
+          ['en', 'Number of videos'],
+          ['zh', '视频数量'],
+          ['ko', '동영상 수'],
+          ['es', 'Número de videos'],
+          ['fr', 'Nombre de vidéos'],
+          ['de', 'Anzahl der Videos'],
+          ['it', 'Numero di video'],
+          ['ru', 'Количество видео'],
+          ['pt', 'Número de vídeos'],
         ],
         [ 
           ['ja', '計算する'],
