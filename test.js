@@ -11,9 +11,9 @@ console.log(db.name);
 const { get_user_with_permission } = require('./server.js');
 const { error_check_for_insert_link } = require('./server.js');
 const { error_check_for_insert_tag } = require('./server.js');
-const { get_tag_id_by_tag_name } = require('./server.js');
-const { insert_tag } = require('./server.js');
-const { make_tag_and_insert_tag } = require('./server.js');
+const { get_tag_id_by_tag_name_for_insert_tag } = require('./server.js');
+const { insert_tag_for_insert_tag } = require('./server.js');
+const { make_tag_and_insert_tag_for_insert_tag } = require('./server.js');
 
 
 
@@ -257,66 +257,73 @@ if(test_mode() === true && db.name === ':memory:') {
   
   
   
-  // // get_tag_id_by_tag_name
-  // // insert_tag
-  // // make_tag_and_insert_tag
-  // describe('about_tag_all', () => {
-  //   beforeAll(() => {
-  //         // -- linksとtagsの中間テーブル
-  //         // CREATE TABLE links_tags (
-  //         //   id INTEGER PRIMARY KEY AUTOINCREMENT,
-  //         //   link_id INTEGER NOT NULL,
-  //         //   tag_id INTEGER NOT NULL,
-  //         //   created_at DATETIME NOT NULL,
-  //         //   updated_at DATETIME NOT NULL
-  //         // );
+  // get_tag_id_by_tag_name
+  // insert_tag
+  // make_tag_and_insert_tag
+  describe('about_tag_all', () => {
+    beforeAll(() => {
+          // -- linksとtagsの中間テーブル
+          // CREATE TABLE links_tags (
+          //   id INTEGER PRIMARY KEY AUTOINCREMENT,
+          //   link_id INTEGER NOT NULL,
+          //   tag_id INTEGER NOT NULL,
+          //   created_at DATETIME NOT NULL,
+          //   updated_at DATETIME NOT NULL
+          // );
   
-  //         // -- tagsというブログのタグのようなサービスのテーブル。IDは自動的に増加する。links_tagsを外部キーとして持つ
-  //         // CREATE TABLE tags (
-  //         //   id INTEGER PRIMARY KEY AUTOINCREMENT,
-  //         //   tag TEXT NOT NULL
-  //         // );
-  //         db.exec(`
-  //         CREATE TABLE links_tags (
-  //             id INTEGER PRIMARY KEY AUTOINCREMENT,
-  //             link_id INTEGER NOT NULL,
-  //             tag_id INTEGER NOT NULL,
-  //             created_at DATETIME NOT NULL,
-  //             updated_at DATETIME NOT NULL
-  //             )
-  //         `);
-  //         db.exec(`
-  //         CREATE TABLE tags (
-  //             id INTEGER PRIMARY KEY AUTOINCREMENT,
-  //             tag TEXT NOT NULL
-  //             )
-  //         `);
-  //         const now = () => new Date().toISOString();
-  //         db.prepare(`INSERT INTO links_tags (link_id, tag_id, created_at, updated_at) VALUES (?, ?, ?, ?)`).run(1, 1, now(), now());
-  //         db.prepare(`INSERT INTO tags (tag) VALUES (?)`).run('testtag');
-  //   });
+          // -- tagsというブログのタグのようなサービスのテーブル。IDは自動的に増加する。links_tagsを外部キーとして持つ
+          // CREATE TABLE tags (
+          //   id INTEGER PRIMARY KEY AUTOINCREMENT,
+          //   tag TEXT NOT NULL
+          // );
+          db.exec(`
+          CREATE TABLE links_tags (
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              link_id INTEGER NOT NULL,
+              tag_id INTEGER NOT NULL,
+              created_at DATETIME NOT NULL,
+              updated_at DATETIME NOT NULL
+              )
+          `);
+          db.exec(`
+          CREATE TABLE tags (
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              tag TEXT NOT NULL
+              )
+          `);
+          const now = () => new Date().toISOString();
+          db.prepare(`INSERT INTO links_tags (link_id, tag_id, created_at, updated_at) VALUES (?, ?, ?, ?)`).run(1, 1, now(), now());
+          db.prepare(`INSERT INTO tags (tag) VALUES (?)`).run('testtag');
+    });
   
   
-  //     it('should return tag_id if tag exists', () => {
-  //         const tag_id = get_tag_id_by_tag_name('testtag', db);
-  //         expect(tag_id).toEqual(1);
-  //     });
+      it('should return tag_id if tag exists', () => {
+          const tag_id = get_tag_id_by_tag_name_for_insert_tag('testtag', db);
+          console.log(tag_id);
+          expect(tag_id).toEqual(1);
+      });
   
-  //     it('should return null if tag does not exist', () => {
-  //         const tag_id = get_tag_id_by_tag_name('testtag2', db);
-  //         expect(tag_id).toBeNull();
-  //     });
-  
-  //     it('should insert tag', () => {
-  //         const tag_id = insert_tag('testtag2', db);
-  //         expect(tag_id).toEqual(2);
-  //     });
-  
-  //     it('should insert tag', () => {
-  //         const tag_id = make_tag_and_insert_tag('testtag3', db);
-  //         expect(tag_id).toEqual(3);
-  //     });
-  // }
-  // );
+      it('should return null if tag does not exist', () => {
+          const tag_id = get_tag_id_by_tag_name_for_insert_tag('testtag2', db);
+          expect(tag_id).toBeNull();
+      });
+
+      it('should insert tag', () => {
+        const tag_id = make_tag_and_insert_tag_for_insert_tag('testtag2', db);
+        expect(tag_id).toEqual(2);
+    });
+
+      it('should return null if links_tags does not exist', () => {
+        const tag_id = insert_tag_for_insert_tag('testtag3', db);
+        expect(tag_id).toBeNull();
+    });
+
+    it('should return tag_id if links_tags exists', () => {
+        const tag_id = insert_tag_for_insert_tag('testtag', db);
+        expect(tag_id).toEqual(1);
+    });
+
+  }
+  );
 
 };

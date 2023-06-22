@@ -1,7 +1,6 @@
 const { test_mode } = require('./server.js');
-// test_modeがtrueであることを確認する。trueでない場合はテストを実施しない
+// test_modeがtrueであることを確認する
 console.log('test_mode() is: ', test_mode());
-
 // test_modeがfalseであることを確認する。falseでない場合はテストを実施しない
 if(test_mode() === false) {
   console.log('test_modeがfalseのためテストを実施しません');
@@ -14,14 +13,15 @@ console.log('DB is: ', db.name);
 const { get_user_with_permission } = require('./server.js');
 const { error_check_for_insert_link } = require('./server.js');
 const { error_check_for_insert_tag } = require('./server.js');
-const { get_tag_id_by_tag_name } = require('./server.js');
-const { insert_tag } = require('./server.js');
-const { make_tag_and_insert_tag } = require('./server.js');
+const { get_tag_id_by_tag_name_for_insert_tag } = require('./server.js');
+const { insert_tag_for_insert_tag } = require('./server.js');
+const { make_tag_and_insert_tag_for_insert_tag } = require('./server.js');
 
 
 if(test_mode() === true && db.name === ':memory:') {
   console.log('テスト開始');
 
+  const now = () => new Date().toISOString();
 
 db.exec(`
 CREATE TABLE users (
@@ -70,7 +70,7 @@ CREATE TABLE links (
   )
 `);
 
-const now = () => new Date().toISOString();
+
 db.prepare(`INSERT INTO links (link, user_id, created_at, updated_at) VALUES (?, ?, ?, ?)`).run('https://www.google.co.jp/', 1, now(), now());
 
 
@@ -246,6 +246,55 @@ test_error_check_for_insert_tag();
 
 
 
+        // -- linksとtagsの中間テーブル
+        // CREATE TABLE links_tags (
+        //   id INTEGER PRIMARY KEY AUTOINCREMENT,
+        //   link_id INTEGER NOT NULL,
+        //   tag_id INTEGER NOT NULL,
+        //   created_at DATETIME NOT NULL,
+        //   updated_at DATETIME NOT NULL
+        // );
+
+        // -- tagsというブログのタグのようなサービスのテーブル。IDは自動的に増加する。links_tagsを外部キーとして持つ
+        // CREATE TABLE tags (
+        //   id INTEGER PRIMARY KEY AUTOINCREMENT,
+        //   tag TEXT NOT NULL
+        // );
+        db.exec(`
+        CREATE TABLE links_tags (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            link_id INTEGER NOT NULL,
+            tag_id INTEGER NOT NULL,
+            created_at DATETIME NOT NULL,
+            updated_at DATETIME NOT NULL
+            )
+        `);
+        db.exec(`
+        CREATE TABLE tags (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            tag TEXT NOT NULL
+            )
+        `);
+
+        db.prepare(`INSERT INTO links_tags (link_id, tag_id, created_at, updated_at) VALUES (?, ?, ?, ?)`).run(1, 1, now(), now());
+        db.prepare(`INSERT INTO tags (tag) VALUES (?)`).run('testtag');
+
+
+        let tag_id = get_tag_id_by_tag_name_for_insert_tag('testtag', db);
+        tag_id === 1 ? "" : console.log('tag_id is not 1');
+
+         tag_id = get_tag_id_by_tag_name_for_insert_tag('testtag2', db);
+        tag_id === null ? "" : console.log('tag_id is not null');
+
+        // LINK_IDが1のとき、tag_idが1のものがあるかどうか
+       tag_id = make_tag_and_insert_tag_for_insert_tag('testtag2', 2, db);
+      tag_id === 2 ? "" : console.log('tag_id is not 2', tag_id);
+
+      //  tag_id = insert_tag_for_insert_tag('testtag3', db);
+      // tag_id === null ? "" : console.log('tag_id is not null');
+
+      //  tag_id = insert_tag_for_insert_tag('testtag', db);
+      // tag_id === 1 ? "" : console.log('tag_id is not 1');
 
 
 
@@ -253,6 +302,8 @@ test_error_check_for_insert_tag();
 
 
 
-};
+
 
 console.log('テスト完了');
+};
+

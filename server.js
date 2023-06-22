@@ -456,38 +456,40 @@ app.post('/like_increment_or_decrement', (req, res) => {
 });
 
 
-const get_tag_id_by_tag_name = () => {
+const get_tag_id_by_tag_name_for_insert_tag = (TAG) => {
     try {
-        tag = db.prepare(`SELECT id, tag FROM tags WHERE tag = ?`).get(req.body.tag)
-            ? db.prepare(`SELECT id, tag FROM tags WHERE tag = ?`).get(req.body.tag)
-                : (()=>{throw new Error('tagsにレコードが存在しません')})();
+    tag = db.prepare(`SELECT id, tag FROM tags WHERE tag = ?`).get(TAG)
+        ? db.prepare(`SELECT id, tag FROM tags WHERE tag = ?`).get(TAG)
+        : null;
+        return tag ? tag.id : null;
     } catch (error) {
         console.log(error);
-        res.status(error.status).json({error: error.res});
+        // res.status(error.status).json({error: error.res});
     }
 };
-const insert_tag = () => {
+const insert_tag_for_insert_tag = (REQ, TAG) => {
     try {
-        db.prepare(`INSERT INTO links_tags (link_id, tag_id, created_at, updated_at) VALUES (?, ?, ?, ?)`).run(req.body.link_id, tag.id, now(), now())
-        ? res.json({message: 'success'})
-            : (()=>{throw new Error('links_tagsにレコードを挿入できませんでした')})();
+        const RESULT = db.prepare(`INSERT INTO links_tags (link_id, tag_id, created_at, updated_at) VALUES (?, ?, ?, ?)`).run(REQ.body.link_id, TAG.id, now(), now())
+            ? res.json({message: 'success'})
+                : (()=>{throw new Error('links_tagsにレコードを挿入できませんでした')})();
+        return RESULT ? RESULT.id : null;
     } catch (error) {
         console.log(error);
-        res.status(error.status).json({error: error.res});
+        // res.status(error.status).json({error: error.res});
     }
 };
-const make_tag_and_insert_tag = () => {
+const make_tag_and_insert_tag_for_insert_tag = (TAG, LINK_ID) => {
     try {
-        db.prepare(`INSERT INTO tags (tag) VALUES (?)`).run(req.body.tag)
-        ? (()=>{throw new Error('tagsにレコードを挿入できませんでした')})()
-            : null;
-        const newTag = db.prepare(`SELECT id, tag FROM tags WHERE tag = ?`).get(req.body.tag)
-            ? (()=>{throw new Error('tagsにレコードを挿入できませんでした')})()
-            : db.prepare(`SELECT id, tag FROM tags WHERE tag = ?`).get(req.body.tag);
-        db.prepare(`INSERT INTO links_tags (link_id, tag_id, created_at, updated_at) VALUES (?, ?, ?, ?)`).run(req.body.link_id, newTag.id, now(), now())
-        ? null
-            : (()=>{throw new Error('links_tagsにレコードを挿入できませんでした')})();
-        return newTag;
+        db.prepare(`INSERT INTO tags (tag) VALUES (?)`).run(TAG)
+            ? null
+            : (()=>{throw new Error({res: 'tagsにレコードを挿入できませんでした', status: 500})})();
+        const newTag = db.prepare(`SELECT id, tag FROM tags WHERE tag = ?`).get(TAG)
+            ? db.prepare(`SELECT id, tag FROM tags WHERE tag = ?`).get(TAG)
+            : (()=>{throw new Error({res: 'tagsにレコードを挿入できませんでした', status: 500})})();
+        db.prepare(`INSERT INTO links_tags (link_id, tag_id, created_at, updated_at) VALUES (?, ?, ?, ?)`).run(LINK_ID, newTag.id, now(), now())
+            ? null
+            : (()=>{throw new Error({res: 'links_tagsにレコードを挿入できませんでした', status: 500})})();
+        return newTag.id;
     } catch (error) {
         console.log(error);
         res.status(error.status).json({error: error.res});
@@ -523,16 +525,20 @@ const error_check_for_insert_tag = (tag) => {
 // 新規にタグを作成して返す場合は、tagsにレコードを挿入して、links_tagsにレコードを挿入する
 app.post('/insert_tag', (req, res) => {
     try {
-    const error_check_result = error_check_for_insert_tag(req.body.tag);
-    error_check_result.status ? null : (()=>{throw new Error(error_check_result.res)})();
+    const error_check_result = error_check_for_insert_tag(req);
+    error_check_result.status ? null : (()=>{throw new Error(error_check_result)})();
     const user = get_user_with_permission(req);
-    user || user.writable ? null : (()=>{throw new Error('権限がありません')})();
-    const tag = get_tag_id_by_tag_name();
-    tag ? insert_tag() : make_tag_and_insert_tag();
+    user || user.writable ? null : (()=>{throw new Error(
+            // res.status(error.status).json({error: error.res});のために
+            // ここでエラーを投げると、エラーの内容がresに入る
+            {res: '書き込み権限がありません', status: 403}
+        )})();
+
+    const tag = get_tag_id_by_tag_name_for_insert_tag(req.body.tag);
+    tag ? insert_tag_for_insert_tag(req, tag) : make_tag_and_insert_tag_for_insert_tag(req);
     res.json({message: 'success'});
     } catch (error) {
         console.log(error);
-        // error_response(res, '原因不明のエラー' + error);
         res.status(error.status).json({error: error.res});
     }
 });
@@ -824,12 +830,12 @@ if(test_mode() === true){
     module.exports.error_check_for_insert_link = error_check_for_insert_link;
     // test.jsのためにerror_check_for_insert_tagをexportする
     module.exports.error_check_for_insert_tag = error_check_for_insert_tag;
-    // test.jsのためにget_tag_id_by_tag_nameをexportする
-    module.exports.get_tag_id_by_tag_name = get_tag_id_by_tag_name;
-    // test.jsのためにinsert_tagをexportする
-    module.exports.insert_tag = insert_tag;
-    // test.jsのためにmake_tag_and_insert_tagをexportする
-    module.exports.make_tag_and_insert_tag = make_tag_and_insert_tag;
+    // get_tag_id_by_tag_name_for_insert_tag
+    module.exports.get_tag_id_by_tag_name_for_insert_tag = get_tag_id_by_tag_name_for_insert_tag
+    // insert_tag_for_insert_tag
+    module.exports.insert_tag_for_insert_tag = insert_tag_for_insert_tag;
+    // make_tag_and_insert_tag_for_insert_tag
+    module.exports.make_tag_and_insert_tag_for_insert_tag = make_tag_and_insert_tag_for_insert_tag;
 } else {
     module.exports.test_mode = test_mode;
     // app.listen(port, "0.0.0.0", () => console.log(`App listening!! at http://localhost:${port}`) );
