@@ -257,9 +257,6 @@ if(test_mode() === true && db.name === ':memory:') {
   
   
   
-  // get_tag_id_by_tag_name
-  // insert_tag
-  // make_tag_and_insert_tag
   describe('about_tag_all', () => {
     beforeAll(() => {
           // -- linksとtagsの中間テーブル
@@ -322,6 +319,7 @@ if(test_mode() === true && db.name === ':memory:') {
         const tag_id = insert_tag_for_insert_tag('testtag', db);
         expect(tag_id).toEqual(1);
     });
+    
 
   }
   );

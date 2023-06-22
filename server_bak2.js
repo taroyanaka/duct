@@ -477,14 +477,14 @@ const error_check_for_insert_tag = (tag) => {
         return symbols.some((symbol) => tag.includes(symbol));
     };    
     switch (true) {
-        case tag === undefined: return 'tagが空です'; break;
+        case tag === undefined: return {res: 'tagが空です', status: false}; break;
         // checkForSymbolsに空白チェックが含まれるため、先にチェックする
-        case checkForSpaces(tag) : return '空白を含む場合はエラー'; break;
+        case checkForSpaces(tag) : return {res: '空白を含む場合はエラー', status: false}; break;
         // /^[-#!$@%^&*()_+|~=`{}\[\]:";'<>?,.\/ ]$/を含む場合はエラー。'記号を含む場合はエラー'を返す
-        case checkForSymbols(tag) : return '記号を含む場合はエラー'; break;
-        case tag.length > 7: return '7文字以上はエラー'; break;
-        case reserved_words.includes(tag): return 'SQLの予約語を含む場合はエラー'; break;
-        default: return 'OK'; break;
+        case checkForSymbols(tag) : return {res: '記号を含む場合はエラー', status: false}; break;
+        case tag.length > 7: return {res: '7文字以上はエラー', status: false}; break;
+        case reserved_words.includes(tag): return {res: 'SQLの予約語を含む場合はエラー', status: false}; break;
+        default: return {res: 'OK', status: true}; break;
     }
 };
 // tagにデータをレコード挿入するエンドポイント
@@ -524,25 +524,22 @@ app.post('/insert_tag', (req, res) => {
 console.log('error_check_result');
     const error_check_result = error_check_for_insert_tag(req.body.tag);
 console.log('error_check_result_status');
-    error_check_result === 'OK' ? null : (()=>{throw new Error(error_check_result)})();
+    error_check_result.status ? null : (()=>{throw new Error(error_check_result)})();
  console.log('get_user_with_permission');
     const user = get_user_with_permission(req);
     user || user.writable ? null : (()=>{throw new Error(
             // res.status(error.status).json({error: error.res});のために
             // ここでエラーを投げると、エラーの内容がresに入る
-            // {res: 
-                '書き込み権限がありません'
-                // , status: 403}
+            {res: '書き込み権限がありません', status: 403}
         )})();
 console.log('get_tag_id_by_tag_name_for_insert_tag');
     const tag = get_tag_id_by_tag_name_for_insert_tag(req.body.tag) ? get_tag_id_by_tag_name_for_insert_tag(req.body.tag) : null;
 
     tag ? insert_tag_for_insert_tag(req, tag) : make_tag_and_insert_tag_for_insert_tag(req.body.tag, req.body.link_id);
-    // res.json({message: 'success'});
-    res.status(200).json({result: 'success'});
+    res.json({message: 'success'});
     } catch (error) {
-        console.log(error.message);
-        res.status(400).json({result: 'fail', error: error.message});
+        console.log(error);
+        res.status(error.status).json({error: error.res});
     }
 });
 
@@ -771,14 +768,14 @@ const error_check_for_insert_link = (link) => {
     const reserved_words = ['SELECT', 'FROM', 'WHERE', 'INSERT', 'DELETE', 'UPDATE', 'DROP', 'ALTER', 'CREATE', 'TABLE', 'INTO', 'VALUES', 'AND', 'OR', 'NOT', 'NULL', 'TRUE', 'FALSE'];
     const is_include_WHITE_LIST_URL = (target_url_str) => WHITE_LIST_URL_ARRAY.some((WHITE_LIST_URL) => target_url_str.startsWith(WHITE_LIST_URL));
     switch (true) {
-        case link === undefined: return 'linkが空です'; break;
-        case reserved_words.includes(link): return 'SQLの予約語を含む場合はエラー'; break;
+        case link === undefined: return {res: 'linkが空です', status: 400}; break;
+        case reserved_words.includes(link): return {res: 'SQLの予約語を含む場合はエラー', status: 400}; break;
         // URLが2000文字より大きい時はエラー
-        case link.length > 2000: return 'URLが長すぎます'; break;
+        case link.length > 2000: return {res: 'URLが長すぎます', status: 400}; break;
         // リンクが正しいURLの形式でないときに400 Bad Requestを返す。validator.jsを使ってチェックする break;
-        case !validator.isURL(link): return 'URLの形式が正しくありません'; break;
-        case !is_include_WHITE_LIST_URL(link): return '許可されていないURLです'; break;
-        default: return 'OK'; break;
+        case !validator.isURL(link): return {res: 'URLの形式が正しくありません', status: 400}; break;
+        case !is_include_WHITE_LIST_URL(link): return {res: '許可されていないURLです', status: 400}; break;
+        default: return {res: 'OK', status: 200}; break;
     }
 };
 // linkにデータをレコード挿入するエンドポイント
@@ -798,7 +795,7 @@ app.post('/insert_link', (req, res) => {
         console.log("error_check_result");
         console.log(error_check_result);
         // error_check_result.status === 200 ? null : (()=>{throw new Error(error_check_result.res)})();
-        error_check_result === 'OK' ? null : (()=>{throw new Error(error_check_result)})();
+        error_check_result.status === 200 ? null : (()=>{throw new Error(error_check_result)})();
 
         const user = get_user_with_permission(req);
         user || user.writable ? null : (()=>{throw new Error('権限がありません')})();
@@ -809,15 +806,13 @@ app.post('/insert_link', (req, res) => {
         const result = db.prepare(`
         INSERT INTO links (user_id, link, created_at, updated_at) VALUES (?, ?, ?, ?)
         `).run(user.user_id, req.body.link, now(), now());
-        result === undefined ? (()=>{throw new Error('原因不明のinsertエラー')})() : null;
 
         // console.log(result);
         res.status(200)
-            .json({result: 'success', link_id: result.lastInsertRowid});
+            .json(result);
     } catch (error) {
         console.log(error);
-        console.log(error.message);
-            res.status(400).json({result: 'fail', error: error.message});
+        res.status(error.status).json({error: error.res});
     }
 });
 

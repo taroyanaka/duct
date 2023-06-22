@@ -1,4 +1,4 @@
-const { test_mode } = require('./server.js');
+const { test_mode, get } = require('./server.js');
 // test_modeがtrueであることを確認する
 console.log('test_mode() is: ', test_mode());
 // test_modeがfalseであることを確認する。falseでない場合はテストを実施しない
@@ -279,16 +279,70 @@ test_error_check_for_insert_tag();
         db.prepare(`INSERT INTO links_tags (link_id, tag_id, created_at, updated_at) VALUES (?, ?, ?, ?)`).run(1, 1, now(), now());
         db.prepare(`INSERT INTO tags (tag) VALUES (?)`).run('testtag');
 
+        // it('should return the tag id when the tag exists', () => {
+          let tag = get_tag_id_by_tag_name_for_insert_tag('testtag');
+          // expect(tagId).to.equal(1);
+          tag.id === 1 ? "" : console.log('tagId is not 1');
+      
+        // en: it('should throw an error when the tag does not exist', () => {
+        // ja: it('タグが存在しない場合はエラーをスローする必要があります', () => {
+        // expect(() => get_tag_id_by_tag_name_for_insert_tag('nonexistent')).to.throw(Error, 'タグが見つかりませんでした');
+       
 
-        let tag_id = get_tag_id_by_tag_name_for_insert_tag('testtag', db);
-        tag_id === 1 ? "" : console.log('tag_id is not 1');
 
-         tag_id = get_tag_id_by_tag_name_for_insert_tag('testtag2', db);
-        tag_id === null ? "" : console.log('tag_id is not null');
+// describe('Error object', () => {
+//   it('should be an instance of Error', () => {
+//     const error = new Error('test error');
+//     expect(error).to.be.an.instanceOf(Error);
+//   });
 
-        // LINK_IDが1のとき、tag_idが1のものがあるかどうか
-       tag_id = make_tag_and_insert_tag_for_insert_tag('testtag2', 2, db);
-      tag_id === 2 ? "" : console.log('tag_id is not 2', tag_id);
+//   it('should have the correct message', () => {
+//     const error = new Error('test error');
+//     expect(error.message).to.equal('test error');
+//   });
+
+//   it('should have the correct name', () => {
+//     const error = new Error('test error');
+//     expect(error.name).to.equal('Error');
+//   });
+
+//   it('should have a stack trace', () => {
+//     const error = new Error('test error');
+//     expect(error.stack).to.be.a('string');
+//   });
+// });
+
+
+        // it('should throw an error with status and res properties when the tag does not exist', () => {
+          // let error = get_tag_id_by_tag_name_for_insert_tag('nonexistent') instanceof Error ? "" : console.log('error is not Error');
+          // expect(error).to.have.property('status', 404);
+          // expect(error).to.have.property('res', 'タグが見つかりませんでした');
+        // });
+      
+        // it('should return an error object when an error occurs', () => {
+          // error = get_tag_id_by_tag_name_for_insert_tag(null);
+          // expect(error).to.be.an.instanceOf(Error);
+        // });
+
+
+
+        
+
+        // it('should return an error object when an error occurs', () => {
+          // const error = get_tag_id_by_tag_name_for_insert_tag(null);
+          // error instanceof Error ? "" : console.log('error is not Error');
+
+
+
+      //   tag = get_tag_id_by_tag_name_for_insert_tag('testtag', db);
+      //   tag.id === 1 ? "" : console.log('tag_id is not 1');
+
+      //    tag = get_tag_id_by_tag_name_for_insert_tag('testtag2', db);
+      //   tag.id === null ? "" : console.log('tag_id is not null');
+
+      //   // LINK_IDが1のとき、tag_idが1のものがあるかどうか
+      //  tag = make_tag_and_insert_tag_for_insert_tag('testtag2', 2, db);
+      // tag.id === 2 ? "" : console.log('tag_id is not 2', tag_id);
 
       //  tag_id = insert_tag_for_insert_tag('testtag3', db);
       // tag_id === null ? "" : console.log('tag_id is not null');
@@ -307,3 +361,14 @@ test_error_check_for_insert_tag();
 console.log('テスト完了');
 };
 
+const foo = () => {
+  try {
+      const bar = () => {
+          throw new Error('Oops!')
+      };
+      bar();
+  } catch (error) {
+      console.error(error);
+  }
+};
+foo();
