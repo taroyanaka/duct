@@ -212,6 +212,7 @@ link_not_exists === undefined ? "" : console.log('link_not_exists is not undefin
 
 
 
+const test_error_check_for_insert_tag = () => {
 let result = error_check_for_insert_tag(undefined);
 result.status === false ? "" : console.log('result.status is not false');
 result.res === 'tagが空です' ? "" : console.log('result.res is not tagが空です');
@@ -235,3 +236,5 @@ result.res === 'SQLの予約語を含む場合はエラー' ? "" : console.log('
   result = error_check_for_insert_tag('test');
 result.status === true ? "" : console.log('result.status is not true');
 result.res === 'OK' ? "" : console.log('result.res is not OK');
+};
+test_error_check_for_insert_tag();
