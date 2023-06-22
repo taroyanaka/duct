@@ -144,6 +144,43 @@ app.post('/just_a_test', (req, res) => {
 });
 
 
+const get_tag_id_by_tag_name = () => {
+    try {
+        tag = db.prepare(`SELECT id, tag FROM tags WHERE tag = ?`).get(req.body.tag)
+            ? db.prepare(`SELECT id, tag FROM tags WHERE tag = ?`).get(req.body.tag)
+                : null;
+    } catch (error) {
+        console.log(error);
+        res.status(error.status).json({error: error.res});
+    }
+};
+const insert_tag = () => {
+    try {
+        db.prepare(`INSERT INTO links_tags (link_id, tag_id, created_at, updated_at) VALUES (?, ?, ?, ?)`).run(req.body.link_id, tag.id, now(), now())
+        ? res.json({message: 'success'})
+            : (()=>{throw new Error('links_tagsにレコードを挿入できませんでした')})();
+    } catch (error) {
+        console.log(error);
+        res.status(error.status).json({error: error.res});
+    }
+};
+const make_tag_and_insert_tag = () => {
+    try {
+        db.prepare(`INSERT INTO tags (tag) VALUES (?)`).run(req.body.tag)
+        ? (()=>{throw new Error('tagsにレコードを挿入できませんでした')})()
+            : null;
+        const newTag = db.prepare(`SELECT id, tag FROM tags WHERE tag = ?`).get(req.body.tag)
+            ? (()=>{throw new Error('tagsにレコードを挿入できませんでした')})()
+            : db.prepare(`SELECT id, tag FROM tags WHERE tag = ?`).get(req.body.tag);
+        db.prepare(`INSERT INTO links_tags (link_id, tag_id, created_at, updated_at) VALUES (?, ?, ?, ?)`).run(req.body.link_id, newTag.id, now(), now())
+        ? null
+            : (()=>{throw new Error('links_tagsにレコードを挿入できませんでした')})();
+        return newTag;
+    } catch (error) {
+        console.log(error);
+        res.status(error.status).json({error: error.res});
+    }
+};
 const error_check_for_insert_tag = (tag) => {
     const reserved_words = ['SELECT', 'FROM', 'WHERE', 'INSERT', 'DELETE', 'UPDATE', 'DROP', 'ALTER', 'CREATE', 'TABLE', 'INTO', 'VALUES', 'AND', 'OR', 'NOT', 'NULL', 'TRUE', 'FALSE'];
     // 空白を含むかチェックする1行の関数。大文字の空白もチェックする。含まれていたらtrueを返す
@@ -178,15 +215,7 @@ app.post('/insert_tag', (req, res) => {
     error_check_result.status ? null : (()=>{throw new Error(error_check_result.res)})();
     const user = get_user_with_permission(req);
     user || user.writable ? null : (()=>{throw new Error('権限がありません')})();
-
-    const tag = db.prepare(`SELECT id, tag FROM tags WHERE tag = ?`).get(req.body.tag);
-    const insert_tag = () => db.prepare(`INSERT INTO links_tags (link_id, tag_id, created_at, updated_at) VALUES (?, ?, ?, ?)`).run(req.body.link_id, tag.id, now(), now());
-    const make_tag_and_insert_tag = () => {
-        db.prepare(`INSERT INTO tags (tag) VALUES (?)`).run(req.body.tag);
-        const newTag = db.prepare(`SELECT id, tag FROM tags WHERE tag = ?`).get(req.body.tag);
-        db.prepare(`INSERT INTO links_tags (link_id, tag_id, created_at, updated_at) VALUES (?, ?, ?, ?)`).run(req.body.link_id, newTag.id, now(), now());
-        return newTag;
-    }
+    const tag = get_tag_id_by_tag_name();
     tag ? insert_tag() : make_tag_and_insert_tag();
     res.json({message: 'success'});
     } catch (error) {
@@ -203,4 +232,11 @@ module.exports.get_user_with_permission = get_user_with_permission;
 module.exports.error_check_for_insert_link = error_check_for_insert_link;
 // test.jsのためにerror_check_for_insert_tagをexportする
 module.exports.error_check_for_insert_tag = error_check_for_insert_tag;
+// test.jsのためにget_tag_id_by_tag_nameをexportする
+module.exports.get_tag_id_by_tag_name = get_tag_id_by_tag_name;
+// test.jsのためにinsert_tagをexportする
+module.exports.insert_tag = insert_tag;
+// test.jsのためにmake_tag_and_insert_tagをexportする
+module.exports.make_tag_and_insert_tag = make_tag_and_insert_tag;
+
 

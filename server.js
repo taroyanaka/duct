@@ -1,3 +1,10 @@
+const test_mode = () => true;
+// const test_mode = () => false;
+
+// test_modeをexportする
+// module.exports.test_mode = test_mode;
+
+
 // package.json for glitch.com
 
 // {
@@ -171,14 +178,25 @@ const validator = require('validator');
 const express = require('express');
 const sqlite = require('better-sqlite3');
 
-const db = new sqlite('./duct.sqlite3');
+
+// test_modeがtrueの時は、テスト用のDBの:memoryを使う。falseの時はduct.sqlite3を使う
+const db = test_mode() === true ? sqlite(':memory:') : new sqlite('./duct.sqlite3');
+// dbをexportする
+module.exports = db;
+// let db = sqlite3(':memory:');
+// const db = new sqlite('./duct.sqlite3');
+
+
 const app = express();
 const bodyParser = require('body-parser');
 app.use(bodyParser.json());
 const cors = require('cors');
 app.use(cors());
 const port = 8000;
-app.listen(port, "0.0.0.0", () => console.log(`App listening!! at http://localhost:${port}`) );
+if(test_mode() === false){
+    app.listen(port, "0.0.0.0", () => console.log(`App listening!! at http://localhost:${port}`) );
+}
+// app.listen(port, "0.0.0.0", () => console.log(`App listening!! at http://localhost:${port}`) );
 // app.listen(port, () => console.log(`App listening!! at http://localhost:${port}`) );
 
 const now = () => new Date().toISOString();
@@ -438,17 +456,61 @@ app.post('/like_increment_or_decrement', (req, res) => {
 });
 
 
+const get_tag_id_by_tag_name = () => {
+    try {
+        tag = db.prepare(`SELECT id, tag FROM tags WHERE tag = ?`).get(req.body.tag)
+            ? db.prepare(`SELECT id, tag FROM tags WHERE tag = ?`).get(req.body.tag)
+                : (()=>{throw new Error('tagsにレコードが存在しません')})();
+    } catch (error) {
+        console.log(error);
+        res.status(error.status).json({error: error.res});
+    }
+};
+const insert_tag = () => {
+    try {
+        db.prepare(`INSERT INTO links_tags (link_id, tag_id, created_at, updated_at) VALUES (?, ?, ?, ?)`).run(req.body.link_id, tag.id, now(), now())
+        ? res.json({message: 'success'})
+            : (()=>{throw new Error('links_tagsにレコードを挿入できませんでした')})();
+    } catch (error) {
+        console.log(error);
+        res.status(error.status).json({error: error.res});
+    }
+};
+const make_tag_and_insert_tag = () => {
+    try {
+        db.prepare(`INSERT INTO tags (tag) VALUES (?)`).run(req.body.tag)
+        ? (()=>{throw new Error('tagsにレコードを挿入できませんでした')})()
+            : null;
+        const newTag = db.prepare(`SELECT id, tag FROM tags WHERE tag = ?`).get(req.body.tag)
+            ? (()=>{throw new Error('tagsにレコードを挿入できませんでした')})()
+            : db.prepare(`SELECT id, tag FROM tags WHERE tag = ?`).get(req.body.tag);
+        db.prepare(`INSERT INTO links_tags (link_id, tag_id, created_at, updated_at) VALUES (?, ?, ?, ?)`).run(req.body.link_id, newTag.id, now(), now())
+        ? null
+            : (()=>{throw new Error('links_tagsにレコードを挿入できませんでした')})();
+        return newTag;
+    } catch (error) {
+        console.log(error);
+        res.status(error.status).json({error: error.res});
+    }
+};
 const error_check_for_insert_tag = (tag) => {
     const reserved_words = ['SELECT', 'FROM', 'WHERE', 'INSERT', 'DELETE', 'UPDATE', 'DROP', 'ALTER', 'CREATE', 'TABLE', 'INTO', 'VALUES', 'AND', 'OR', 'NOT', 'NULL', 'TRUE', 'FALSE'];
-    function checkForSymbols(tag) {
-    const regex = /^[-#!$@%^&*()_+|~=`{}\[\]:";'<>?,.\/ ]$/g;
-    return regex.test(tag);
+    // 空白を含むかチェックする1行の関数。大文字の空白もチェックする。含まれていたらtrueを返す
+    const checkForSpaces = (tag) => {
+        const spaces = [' ', '　'];
+        return spaces.some((space) => tag.includes(space));
     }
+    // 記号が含まれているかチェックする1行の関数。含まれていたらtrueを返す
+    const checkForSymbols = (tag) => {
+        const symbols = ['-', '#', '!', '$', '@', '%', '^', '&', '*', '(', ')', '_', '+', '|', '~', '=', '`', '{', '}', '[', ']', ':', '"', ';', '\'', '<', '>', '?', ',', '.', '/', ' '];
+        return symbols.some((symbol) => tag.includes(symbol));
+    };    
     switch (true) {
         case tag === undefined: return {res: 'tagが空です', status: false}; break;
+        // checkForSymbolsに空白チェックが含まれるため、先にチェックする
+        case checkForSpaces(tag) : return {res: '空白を含む場合はエラー', status: false}; break;
         // /^[-#!$@%^&*()_+|~=`{}\[\]:";'<>?,.\/ ]$/を含む場合はエラー。'記号を含む場合はエラー'を返す
         case checkForSymbols(tag) : return {res: '記号を含む場合はエラー', status: false}; break;
-        case tag.match(/\s/g): return {res: '空白を含む場合はエラー', status: false}; break;
         case tag.length > 7: return {res: '7文字以上はエラー', status: false}; break;
         case reserved_words.includes(tag): return {res: 'SQLの予約語を含む場合はエラー', status: false}; break;
         default: return {res: 'OK', status: true}; break;
@@ -465,20 +527,13 @@ app.post('/insert_tag', (req, res) => {
     error_check_result.status ? null : (()=>{throw new Error(error_check_result.res)})();
     const user = get_user_with_permission(req);
     user || user.writable ? null : (()=>{throw new Error('権限がありません')})();
-
-    const tag = db.prepare(`SELECT id, tag FROM tags WHERE tag = ?`).get(req.body.tag);
-    const insert_tag = () => db.prepare(`INSERT INTO links_tags (link_id, tag_id, created_at, updated_at) VALUES (?, ?, ?, ?)`).run(req.body.link_id, tag.id, now(), now());
-    const make_tag_and_insert_tag = () => {
-        db.prepare(`INSERT INTO tags (tag) VALUES (?)`).run(req.body.tag);
-        const newTag = db.prepare(`SELECT id, tag FROM tags WHERE tag = ?`).get(req.body.tag);
-        db.prepare(`INSERT INTO links_tags (link_id, tag_id, created_at, updated_at) VALUES (?, ?, ?, ?)`).run(req.body.link_id, newTag.id, now(), now());
-        return newTag;
-    }
+    const tag = get_tag_id_by_tag_name();
     tag ? insert_tag() : make_tag_and_insert_tag();
     res.json({message: 'success'});
     } catch (error) {
         console.log(error);
-        error_response(res, '原因不明のエラー' + error);
+        // error_response(res, '原因不明のエラー' + error);
+        res.status(error.status).json({error: error.res});
     }
 });
 
@@ -756,5 +811,25 @@ app.post('/insert_link', (req, res) => {
 });
 
 
-// test.jsのためにexportする
-module.exports = app;
+if(test_mode() === true){
+    // test.jsのためにexportする
+    module.exports = app;
+    // test.jsのためにdbをexportする
+    module.exports.db = db;
+
+    module.exports.test_mode = test_mode;
+    // test.jsのためにget_user_with_permissionをexportする
+    module.exports.get_user_with_permission = get_user_with_permission;
+    // test.jsのためにerror_check_for_insert_linkをexportする
+    module.exports.error_check_for_insert_link = error_check_for_insert_link;
+    // test.jsのためにerror_check_for_insert_tagをexportする
+    module.exports.error_check_for_insert_tag = error_check_for_insert_tag;
+    // test.jsのためにget_tag_id_by_tag_nameをexportする
+    module.exports.get_tag_id_by_tag_name = get_tag_id_by_tag_name;
+    // test.jsのためにinsert_tagをexportする
+    module.exports.insert_tag = insert_tag;
+    // test.jsのためにmake_tag_and_insert_tagをexportする
+    module.exports.make_tag_and_insert_tag = make_tag_and_insert_tag;
+} else {
+    // app.listen(port, "0.0.0.0", () => console.log(`App listening!! at http://localhost:${port}`) );
+}
