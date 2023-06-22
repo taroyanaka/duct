@@ -144,6 +144,44 @@ app.post('/just_a_test', (req, res) => {
 });
 
 
+const error_check_for_insert_tag = (tag) => {
+    const reserved_words = ['SELECT', 'FROM', 'WHERE', 'INSERT', 'DELETE', 'UPDATE', 'DROP', 'ALTER', 'CREATE', 'TABLE', 'INTO', 'VALUES', 'AND', 'OR', 'NOT', 'NULL', 'TRUE', 'FALSE'];
+    switch (true) {
+        case tag === undefined: return {res: 'tagが空です', status: false};
+        case tag.match(/[!-/:-@[-`{-~]/g): return {res: '記号を含む場合はエラー', status: false};
+        case tag.match(/\s/g): return {res: '空白を含む場合はエラー', status: false};
+        case tag.length > 7: return {res: '7文字以上はエラー', status: false};
+        case reserved_words.includes(tag): return {res: 'SQLの予約語を含む場合はエラー', status: false};
+        default: return {res: 'OK', status: true};
+    }
+};
+// tagにデータをレコード挿入するエンドポイント
+// 既に存在する場合は、既存のタグを返す
+// 存在しない場合は、新規にタグを作成して返す
+// 既存のタグを返す場合は、links_tagsにレコードを挿入する
+// 新規にタグを作成して返す場合は、tagsにレコードを挿入して、links_tagsにレコードを挿入する
+app.post('/insert_tag', (req, res) => {
+    try {
+    const error_check_result = error_check_for_insert_tag(req.body.tag);
+    error_check_result.status ? null : (()=>{throw new Error(error_check_result.res)})();
+    const user = get_user_with_permission(req);
+    user || user.writable ? null : (()=>{throw new Error('権限がありません')})();
+
+    const tag = db.prepare(`SELECT id, tag FROM tags WHERE tag = ?`).get(req.body.tag);
+    const insert_tag = () => db.prepare(`INSERT INTO links_tags (link_id, tag_id, created_at, updated_at) VALUES (?, ?, ?, ?)`).run(req.body.link_id, tag.id, now(), now());
+    const make_tag_and_insert_tag = () => {
+        db.prepare(`INSERT INTO tags (tag) VALUES (?)`).run(req.body.tag);
+        const newTag = db.prepare(`SELECT id, tag FROM tags WHERE tag = ?`).get(req.body.tag);
+        db.prepare(`INSERT INTO links_tags (link_id, tag_id, created_at, updated_at) VALUES (?, ?, ?, ?)`).run(req.body.link_id, newTag.id, now(), now());
+        return newTag;
+    }
+    tag ? insert_tag() : make_tag_and_insert_tag();
+    res.json({message: 'success'});
+    } catch (error) {
+        console.log(error);
+        error_response(res, '原因不明のエラー' + error);
+    }
+});
 
 // test.jsのためにexportする
 module.exports = app;
@@ -151,4 +189,6 @@ module.exports = app;
 module.exports.get_user_with_permission = get_user_with_permission;
 // test.jsのためにerror_check_for_insert_linkをexportする
 module.exports.error_check_for_insert_link = error_check_for_insert_link;
+// test.jsのためにerror_check_for_insert_tagをexportする
+module.exports.error_check_for_insert_tag = error_check_for_insert_tag;
 

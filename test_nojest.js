@@ -13,6 +13,8 @@ let db = sqlite3(':memory:');
 
 const { get_user_with_permission } = require('./server_test.js');
 const { error_check_for_insert_link } = require('./server_test.js');
+// error_check_for_insert_tag
+const { error_check_for_insert_tag } = require('./server_test.js');
 
 global.db = db;
 
@@ -207,3 +209,29 @@ link_exists === null ? console.log('link_exists is null') : "";
 const link_not_exists = db.prepare(`SELECT * FROM links WHERE link = ?`).get('https://www.yahoo.co.jp/');
 // expect(link_not_exists).toBeUndefined();
 link_not_exists === undefined ? "" : console.log('link_not_exists is not undefined');
+
+
+
+let result = error_check_for_insert_tag(undefined);
+result.status === false ? "" : console.log('result.status is not false');
+result.res === 'tagが空です' ? "" : console.log('result.res is not tagが空です');
+
+  result = error_check_for_insert_tag('test!');
+result.status === false ? "" : console.log('result.status is not false');
+result.res === '記号を含む場合はエラー' ? "" : console.log('result.res is not 記号を含む場合はエラー');
+
+  result = error_check_for_insert_tag('test tag');
+result.status === false ? "" : console.log('result.status is not false');
+result.res === '空白を含む場合はエラー' ? "" : console.log('result.res is not 空白を含む場合はエラー');
+
+  result = error_check_for_insert_tag('testlong');
+result.status === false ? "" : console.log('result.status is not false');
+result.res === '7文字以上はエラー' ? "" : console.log('result.res is not 7文字以上はエラー');
+
+  result = error_check_for_insert_tag('SELECT');
+result.status === false ? "" : console.log('result.status is not false');
+result.res === 'SQLの予約語を含む場合はエラー' ? "" : console.log('result.res is not SQLの予約語を含む場合はエラー');
+
+  result = error_check_for_insert_tag('test');
+result.status === true ? "" : console.log('result.status is not true');
+result.res === 'OK' ? "" : console.log('result.res is not OK');
