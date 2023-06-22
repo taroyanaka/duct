@@ -1,19 +1,13 @@
+// jestを使ってテストをする場合は、test.jsというファイル名にする必要があり、
+// かつ、test.jsの中で、appをrequireする必要がある。
 const app = require('./server');
-// server.jsからtest_modeをexportする
-// app.js
-const { test_mode } = require('./server');
+
+const { test_mode } = require('./server.js');
 // test_modeがtrueであることを確認する。trueでない場合はテストを実施しない
-// dbをserverからexportする
 console.log(test_mode());
-
-const { db } = require('./server');
-// dbがin memoryであることを確認する。in memoryでない場合は強制終了する
-// データベースがメモリ内に存在するかチェック
-// console.log(db.name);
-// db.name === ':memory:'
-// db.nameが':memory:'であることを確認する。':memory:'でない場合は強制終了する
-
-
+const { db } = require('./server.js');
+console.log(db.name);
+// db.nameが':memory:'であることを確認する。':memory:'でない場合はテストを実施しない
 const { get_user_with_permission } = require('./server.js');
 const { error_check_for_insert_link } = require('./server.js');
 const { error_check_for_insert_tag } = require('./server.js');
@@ -21,7 +15,6 @@ const { get_tag_id_by_tag_name } = require('./server.js');
 const { insert_tag } = require('./server.js');
 const { make_tag_and_insert_tag } = require('./server.js');
 
-console.log(db.name);
 
 
 if(test_mode() === true && db.name === ':memory:') {

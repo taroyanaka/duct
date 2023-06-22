@@ -1,22 +1,26 @@
-// const request = require('supertest');
-const app = require('./server_test');
+const { test_mode } = require('./server.js');
+// test_modeがtrueであることを確認する。trueでない場合はテストを実施しない
+console.log('test_mode() is: ', test_mode());
 
-const sqlite3 = require('better-sqlite3');
+// test_modeがfalseであることを確認する。falseでない場合はテストを実施しない
+if(test_mode() === false) {
+  console.log('test_modeがfalseのためテストを実施しません');
+  process.exit();
+};
 
-// Create an in-memory database
-let db = sqlite3(':memory:');
+const { db } = require('./server.js');
+console.log('DB is: ', db.name);
+// db.nameが':memory:'であることを確認する。':memory:'でない場合はテストを実施しない
+const { get_user_with_permission } = require('./server.js');
+const { error_check_for_insert_link } = require('./server.js');
+const { error_check_for_insert_tag } = require('./server.js');
+const { get_tag_id_by_tag_name } = require('./server.js');
+const { insert_tag } = require('./server.js');
+const { make_tag_and_insert_tag } = require('./server.js');
 
 
-
-
-
-
-const { get_user_with_permission } = require('./server_test.js');
-const { error_check_for_insert_link } = require('./server_test.js');
-// error_check_for_insert_tag
-const { error_check_for_insert_tag } = require('./server_test.js');
-
-global.db = db;
+if(test_mode() === true && db.name === ':memory:') {
+  console.log('テスト開始');
 
 
 db.exec(`
@@ -238,3 +242,17 @@ result.status === true ? '' : console.log('result.status is not true');
 result.res === 'OK' ? '' : console.log('result.res is not OK');
 };
 test_error_check_for_insert_tag();
+
+
+
+
+
+
+
+
+
+
+
+};
+
+console.log('テスト完了');

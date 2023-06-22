@@ -831,5 +831,6 @@ if(test_mode() === true){
     // test.jsのためにmake_tag_and_insert_tagをexportする
     module.exports.make_tag_and_insert_tag = make_tag_and_insert_tag;
 } else {
+    module.exports.test_mode = test_mode;
     // app.listen(port, "0.0.0.0", () => console.log(`App listening!! at http://localhost:${port}`) );
 }
