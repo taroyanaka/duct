@@ -188,25 +188,25 @@ describe('get_user_with_permission', () => {
     expect(result).toEqual({ res: '記号を含む場合はエラー', status: false });
   });
 
-  // it('should return an error if tag contains spaces', () => {
-  //   const result = error_check_for_insert_tag('test tag');
-  //   expect(result).toEqual({ res: '空白を含む場合はエラー', status: false });
-  // });
+  it('should return an error if tag contains spaces', () => {
+    const result = error_check_for_insert_tag('test tag');
+    expect(result).toEqual({ res: '空白を含む場合はエラー', status: false });
+  });
 
-  // it('should return an error if tag is longer than 7 characters', () => {
-  //   const result = error_check_for_insert_tag('testlongtag');
-  //   expect(result).toEqual({ res: '7文字以上はエラー', status: false });
-  // });
+  it('should return an error if tag is longer than 7 characters', () => {
+    const result = error_check_for_insert_tag('testlongtag');
+    expect(result).toEqual({ res: '7文字以上はエラー', status: false });
+  });
 
-  // it('should return an error if tag contains SQL reserved words', () => {
-  //   const result = error_check_for_insert_tag('SELECT');
-  //   expect(result).toEqual({ res: 'SQLの予約語を含む場合はエラー', status: false });
-  // });
+  it('should return an error if tag contains SQL reserved words', () => {
+    const result = error_check_for_insert_tag('SELECT');
+    expect(result).toEqual({ res: 'SQLの予約語を含む場合はエラー', status: false });
+  });
 
-  // it('should return success if tag is valid', () => {
-  //   const result = error_check_for_insert_tag('testtag');
-  //   expect(result).toEqual({ res: 'OK', status: true });
-  // });
+  it('should return success if tag is valid', () => {
+    const result = error_check_for_insert_tag('testtag');
+    expect(result).toEqual({ res: 'OK', status: true });
+  });
 
 
 
