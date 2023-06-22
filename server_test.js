@@ -146,13 +146,25 @@ app.post('/just_a_test', (req, res) => {
 
 const error_check_for_insert_tag = (tag) => {
     const reserved_words = ['SELECT', 'FROM', 'WHERE', 'INSERT', 'DELETE', 'UPDATE', 'DROP', 'ALTER', 'CREATE', 'TABLE', 'INTO', 'VALUES', 'AND', 'OR', 'NOT', 'NULL', 'TRUE', 'FALSE'];
+    // 空白を含むかチェックする1行の関数。大文字の空白もチェックする。含まれていたらtrueを返す
+    const checkForSpaces = (tag) => {
+        const spaces = [' ', '　'];
+        return spaces.some((space) => tag.includes(space));
+    }
+    // 記号が含まれているかチェックする1行の関数。含まれていたらtrueを返す
+    const checkForSymbols = (tag) => {
+        const symbols = ['-', '#', '!', '$', '@', '%', '^', '&', '*', '(', ')', '_', '+', '|', '~', '=', '`', '{', '}', '[', ']', ':', '"', ';', '\'', '<', '>', '?', ',', '.', '/', ' '];
+        return symbols.some((symbol) => tag.includes(symbol));
+    };    
     switch (true) {
-        case tag === undefined: return {res: 'tagが空です', status: false};
-        case tag.match(/[!-/:-@[-`{-~]/g): return {res: '記号を含む場合はエラー', status: false};
-        case tag.match(/\s/g): return {res: '空白を含む場合はエラー', status: false};
-        case tag.length > 7: return {res: '7文字以上はエラー', status: false};
-        case reserved_words.includes(tag): return {res: 'SQLの予約語を含む場合はエラー', status: false};
-        default: return {res: 'OK', status: true};
+        case tag === undefined: return {res: 'tagが空です', status: false}; break;
+        // checkForSymbolsに空白チェックが含まれるため、先にチェックする
+        case checkForSpaces(tag) : return {res: '空白を含む場合はエラー', status: false}; break;
+        // /^[-#!$@%^&*()_+|~=`{}\[\]:";'<>?,.\/ ]$/を含む場合はエラー。'記号を含む場合はエラー'を返す
+        case checkForSymbols(tag) : return {res: '記号を含む場合はエラー', status: false}; break;
+        case tag.length > 7: return {res: '7文字以上はエラー', status: false}; break;
+        case reserved_words.includes(tag): return {res: 'SQLの予約語を含む場合はエラー', status: false}; break;
+        default: return {res: 'OK', status: true}; break;
     }
 };
 // tagにデータをレコード挿入するエンドポイント

@@ -218,23 +218,23 @@ result.status === false ? "" : console.log('result.status is not false');
 result.res === 'tagが空です' ? "" : console.log('result.res is not tagが空です');
 
   result = error_check_for_insert_tag('test!');
-result.status === false ? "" : console.log('result.status is not false');
-result.res === '記号を含む場合はエラー' ? "" : console.log('result.res is not 記号を含む場合はエラー');
+result.status === false ? ''  : console.log('result.status is not false');
+result.res === '記号を含む場合はエラー' ? '' : console.log('result.res is not 記号を含む場合はエラー');
 
-  result = error_check_for_insert_tag('test tag');
-result.status === false ? "" : console.log('result.status is not false');
-result.res === '空白を含む場合はエラー' ? "" : console.log('result.res is not 空白を含む場合はエラー');
+result = error_check_for_insert_tag('test tag');
+result.status === false ? '' : console.log('result.status is not false');
+result.res === '空白を含む場合はエラー' ? '' : console.log('result.res is not 空白を含む場合はエラー');
 
   result = error_check_for_insert_tag('testlong');
-result.status === false ? "" : console.log('result.status is not false');
-result.res === '7文字以上はエラー' ? "" : console.log('result.res is not 7文字以上はエラー');
+result.status === false ? '' : console.log('result.status is not false');
+result.res === '7文字以上はエラー' ? '' : console.log('result.res is not 7文字以上はエラー');
 
   result = error_check_for_insert_tag('SELECT');
-result.status === false ? "" : console.log('result.status is not false');
-result.res === 'SQLの予約語を含む場合はエラー' ? "" : console.log('result.res is not SQLの予約語を含む場合はエラー');
+result.status === false ? '' : console.log('result.status is not false');
+result.res === 'SQLの予約語を含む場合はエラー' ? '' : console.log('result.res is not SQLの予約語を含む場合はエラー');
 
   result = error_check_for_insert_tag('test');
-result.status === true ? "" : console.log('result.status is not true');
-result.res === 'OK' ? "" : console.log('result.res is not OK');
+result.status === true ? '' : console.log('result.status is not true');
+result.res === 'OK' ? '' : console.log('result.res is not OK');
 };
 test_error_check_for_insert_tag();
