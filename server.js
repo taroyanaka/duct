@@ -347,7 +347,9 @@ app.get('/read_all', (req, res) => {
 
     // SQLインジェクションの余地がある!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     // better-sqlite3のプレースホルダ使え!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
+    // const QUERYをプレースホルダに渡すための配列に変換する
+    const QUERY_ARRAY_1 = WHERE ? [STANDARD_READ_QUERY, WHERE, ORDER_BY_COLUMN, ORDER_BY] : null;
+    const QUERY_ARRAY_2 = WHERE ? null : [STANDARD_READ_QUERY, ORDER_BY_COLUMN, ORDER_BY];
 
 
 
@@ -355,14 +357,28 @@ app.get('/read_all', (req, res) => {
         // console.log(['ORDER_BY', ORDER_BY],['ORDER_BY_COLUMN', ORDER_BY_COLUMN],['REQ_TAG', REQ_TAG],['USER', USER],['WHERE_TAG_AND_USER', WHERE_TAG_AND_USER],['WHERE_TAG', WHERE_TAG],['WHERE_USER', WHERE_USER],['WHERE', WHERE],);
         // console.log(QUERY);
 
-        return QUERY;
+        // return QUERY;
+        return QUERY_ARRAY_1 ? {QUERY_ARRAY_1: QUERY_ARRAY_1} : {QUERY_ARRAY_2: QUERY_ARRAY_2}
         } catch (error) {
             res.status(400).json({result: 'fail', error: error.message});
         }
     };
 
     // const pre_result = db.prepare(STANDARD_READ_QUERY).all();
-    const pre_result = db.prepare(read_query(req)).all();
+    // const pre_result = db.prepare(read_query(req)).all();
+    // const QUERY_ARRAY_for_pre_result = 
+    const QUERY_ARRAY_for_pre_result_1 = null;
+    const QUERY_ARRAY_for_pre_result_2 = null;
+    read_query(req).QUERY_ARRAY_1
+        ? QUERY_ARRAY_for_pre_result_1 = read_query(req).QUERY_ARRAY_1
+        : QUERY_ARRAY_for_pre_result_2 = read_query(req).QUERY_ARRAY_2;
+
+        QUERY_ARRAY_for_pre_result_1 ?
+            db.prepare
+
+
+        // db.prepare(read_query(req)).all();
+
 
     const result = pre_result.map(parent => {
       const tags = db.prepare(`
