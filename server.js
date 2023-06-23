@@ -475,7 +475,10 @@ app.post('/like_increment_or_decrement', (req, res) => {
         };
         error_check(req.body.user_id, req.body.link_id);
 
-        const result = db.prepare(`SELECT * FROM likes WHERE user_id = ? AND link_id = ?`).get(user.user_id, req.body.link_id)
+        const like_exists = db.prepare(`SELECT * FROM likes WHERE user_id = ? AND link_id = ?`).get(user.user_id, req.body.link_id)
+            ? true
+            : (()=>{throw new Error('そんなlikeは無えよ')})();
+        const result = like_exists
             ? db.prepare(`DELETE FROM likes WHERE user_id = ? AND link_id = ?`).run(user.user_id, req.body.link_id)
             : db.prepare(`INSERT INTO likes (user_id, link_id, created_at, updated_at) VALUES (?, ?, ?, ?)`).run(user.user_id, req.body.link_id, now(), now());
         res.json({message: 'success', result: result});
