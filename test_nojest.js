@@ -357,18 +357,17 @@ test_error_check_for_insert_tag();
 
 
 
-
 console.log('テスト完了');
 };
 
-const foo = () => {
-  try {
-      const bar = () => {
-          throw new Error('Oops!')
-      };
-      bar();
-  } catch (error) {
-      console.error(error);
-  }
-};
-foo();
+// const foo = () => {
+//   try {
+//       const bar = () => {
+//           throw new Error('Oops!')
+//       };
+//       bar();
+//   } catch (error) {
+//       console.error(error);
+//   }
+// };
+// foo();

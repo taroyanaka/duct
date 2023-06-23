@@ -212,6 +212,7 @@ const error_response = (res, status_code, error_message) => res.status(status_co
 // en: should return null with non-existent username
 // ja: 存在しないユーザー名でnullを返すべき
 const get_user_with_permission = (REQ) => {
+    try {
     // overwrite_password関数はID/PASSWORDの秘匿化のための応急処置として使用する
     // glitch.comにおいてpravateな情報を扱う場合は、.dataフォルダに格納する
     // REQ.body.nameがlines[0]と一致し、
@@ -219,25 +220,29 @@ const get_user_with_permission = (REQ) => {
     // REQ.body.passwordをlines[1]に書き換える関数
     // overwrite_passwordを一行関数で
     const overwrite_password = (REQ) => {
+        try {
         const FILE_NAME = './.data/for_overwriting_id_password.csv';
         // csvファイルを読み込んで','でsplitしてconsole.logする
         const fs = require('fs');
         const line = fs.readFileSync(FILE_NAME, 'utf8').split(',');    
         const result = REQ.body.name === line[0] && REQ.body.password === line[2] ? line[1] : REQ.body.password;
         return [REQ.body.name, result];
+        } catch (error) {
+            (()=>{throw new Error('無効な認証(overwrite_password)')})()
+        }
     };
     // 本番環境においてはoverwrite_passwordを実行
     // [REQ.body.name, REQ.body.password] = overwrite_password(req, line);
 
-    // 無効な認証情報でnullを返す
+    // 無効な認証情報をエラーで返す
     if (REQ.body.name === '' || REQ.body.password === '' || REQ.body.name === undefined || REQ.body.password === undefined || REQ.body.name === null || REQ.body.password === null
         || REQ.body.name.length > 20 || REQ.body.password.length > 20 || REQ.body.name.length < 4 || REQ.body.password.length < 4
         || REQ.body.name.includes(' ') || REQ.body.password.includes(' ')
         || REQ.body.name.includes('　') || REQ.body.password.includes('　')
     ) {
-        return null;
+        (()=>{throw new Error('無効な認証')})();
     }
-    //  存在しないユーザー名でnullを返す
+    //  存在しないユーザー名も無効な認証で返す
     if (db.prepare(`
     SELECT users.id AS user_id, users.username AS username, user_permission.permission AS user_permission,
     user_permission.deletable AS deletable,
@@ -249,7 +254,7 @@ const get_user_with_permission = (REQ) => {
     LEFT JOIN user_permission ON users.user_permission_id = user_permission.id
     WHERE users.username = ? AND users.userpassword = ?
     `).get(REQ.body.name, REQ.body.password) === undefined) {
-        return null;
+        (()=>{throw new Error('無効な認証')})();
     }
 
     return db.prepare(`
@@ -263,6 +268,22 @@ const get_user_with_permission = (REQ) => {
     LEFT JOIN user_permission ON users.user_permission_id = user_permission.id
     WHERE users.username = ? AND users.userpassword = ?
     `).get(REQ.body.name, REQ.body.password)
+         ? db.prepare(`
+         SELECT users.id AS user_id, users.username AS username, user_permission.permission AS user_permission,
+         user_permission.deletable AS deletable,
+         user_permission.writable AS writable,
+         user_permission.readable AS readable,
+         user_permission.likable AS likable,
+         user_permission.commentable AS commentable
+         FROM users
+         LEFT JOIN user_permission ON users.user_permission_id = user_permission.id
+         WHERE users.username = ? AND users.userpassword = ?
+         `).get(REQ.body.name, REQ.body.password)
+         : (()=>{throw new Error('無効な認証')})();
+    } catch (error) {
+        console.log(error.message);
+        res.status(400).json({result: 'fail', error: error.message});
+    }
 };
 
 
@@ -370,7 +391,7 @@ app.get('/read_all', (req, res) => {
     // console.log(result);
   } catch (error) {
     console.log(error);
-    error_response(res, '原因不明のエラー' + error);
+    res.status(400).json({result: 'fail', error: error.message});
   }
 });
 
@@ -435,7 +456,7 @@ app.post('/delete_link', (req, res) => {
         res.json({result: 'ok'});
     } catch (error) {
         console.log(error);
-        error_response(res, '原因不明のエラー' + error);
+        res.status(400).json({result: 'fail', error: error.message});
     }
 });
 
@@ -444,14 +465,23 @@ app.post('/like_increment_or_decrement', (req, res) => {
     try {
         const user = get_user_with_permission(req);
         user || user.likable ? null : (()=>{throw new Error('権限がありません')})();
-        console.log(req.body.link_id, user.user_id);
+
+        const error_check = (user_id, link_id) => {
+            const user_exists = db.prepare(`SELECT * FROM users WHERE id = ?`).get(user_id);
+            const link_exists = db.prepare(`SELECT * FROM links WHERE id = ?`).get(link_id);
+            return !user_exists ?  (()=>{throw new Error('no existing user_id should return 400')})() :
+                    !link_exists ? (()=>{throw new Error('no existing link_id should return 400')})() :
+                    undefined;
+        };
+        error_check(req.body.user_id, req.body.link_id);
+
         const result = db.prepare(`SELECT * FROM likes WHERE user_id = ? AND link_id = ?`).get(user.user_id, req.body.link_id)
             ? db.prepare(`DELETE FROM likes WHERE user_id = ? AND link_id = ?`).run(user.user_id, req.body.link_id)
             : db.prepare(`INSERT INTO likes (user_id, link_id, created_at, updated_at) VALUES (?, ?, ?, ?)`).run(user.user_id, req.body.link_id, now(), now());
         res.json({message: 'success', result: result});
     } catch (error) {
         console.log(error);
-        error_response(res, '原因不明のエラー' + error);
+        res.status(400).json({result: 'fail', error: error.message});
     }
 });
 
@@ -587,26 +617,26 @@ app.post('/get_tags_for_autocomplete', (req, res) => {
 // commentの文字数はuser_permissionのdata_limitに依存する。commentの文字数がdata_limitを超える場合はエラー
 // 空の場合はエラー。記号を含む場合はエラー。空白を含む場合はエラー。SQLの予約語を含む場合はエラー。
 // 300文字以上はエラー。既に同じcommentが存在する場合はエラー
+const error_check_insert_comment = (comment, DATA_LIMIT) => {
+    const reserved_words = ['SELECT', 'FROM', 'WHERE', 'INSERT', 'DELETE', 'UPDATE', 'DROP', 'ALTER', 'CREATE', 'TABLE', 'INTO', 'VALUES', 'AND', 'OR', 'NOT', 'NULL', 'TRUE', 'FALSE'];
+    switch (true) {
+        case comment === undefined: return 'commentが空の場合はエラー'; break;
+        case comment.length > DATA_LIMIT: return 'commentの文字数がdata_limitを超える場合はエラー'; break;
+        case comment.length === 0: return '0文字の場合はエラー'; break;
+        case comment.match(/[!-/:-@[-`{-~]/g): return '記号を含む場合はエラー'; break;
+        case comment.match(/\s/g): return '空白を含む場合はエラー'; break;
+        case comment.length > 300: return '300文字以上はエラー'; break;
+        case reserved_words.includes(comment): return 'SQLの予約語を含む場合はエラー'; break;
+        default: return 'OK'; break;
+    }
+}
 app.post('/insert_comment', (req, res) => {
     try {
-        const error_check = (comment, DATA_LIMIT) => {
-            const reserved_words = ['SELECT', 'FROM', 'WHERE', 'INSERT', 'DELETE', 'UPDATE', 'DROP', 'ALTER', 'CREATE', 'TABLE', 'INTO', 'VALUES', 'AND', 'OR', 'NOT', 'NULL', 'TRUE', 'FALSE'];
-            switch (true) {
-                case comment === undefined: return {res: 'commentが空の場合はエラー', status: false};
-                case comment.length > DATA_LIMIT: return {res: 'commentの文字数がdata_limitを超える場合はエラー', status: false};
-                case comment.length === 0: return {res: '0文字の場合はエラー', status: false};
-                case comment.match(/[!-/:-@[-`{-~]/g): return {res: '記号を含む場合はエラー', status: false};
-                case comment.match(/\s/g): return {res: '空白を含む場合はエラー', status: false};
-                case comment.length > 300: return {res: '300文字以上はエラー', status: false};
-                case reserved_words.includes(comment): return {res: 'SQLの予約語を含む場合はエラー', status: false};
-                default: return {res: 'OK', status: true};
-            }
-        }
         const user = get_user_with_permission(req);
         user || user.commentable ? null : (()=>{throw new Error('権限がありません')})();
 
-        const error_check_result = error_check(req.body.comment, user.data_limit);
-        error_check_result.status ? null : (()=>{throw new Error(error_check_result.res)})();
+        const error_check_result = error_check_insert_comment(req.body.comment, user.data_limit);
+        error_check_result === 'OK' ? null : (()=>{throw new Error(error_check_result)})();
 
         db.prepare(`SELECT COUNT(*) AS count FROM comments WHERE user_id = ? AND link_id = ?`).get(user.user_id, req.body.link_id).count > 0 ? (()=>{throw new Error('既に同じcommentが存在する場合はエラー')})() : null;
 
@@ -643,34 +673,44 @@ app.post('/delete_comment', (req, res) => {
 // comment_replyの文字数はuser_permissionのdata_limitに依存する。comment_replyの文字数がdata_limitを超える場合はエラー
 // 空の場合はエラー。記号を含む場合はエラー。空白を含む場合はエラー。SQLの予約語を含む場合はエラー。
 // 10文字以上はエラー。既に同じcomment_replyが存在する場合はエラー
+const error_check_insert_comment_reply = (comment_reply, DATA_LIMIT) => {
+    const reserved_words = ['SELECT', 'FROM', 'WHERE', 'INSERT', 'DELETE', 'UPDATE', 'DROP', 'ALTER', 'CREATE', 'TABLE', 'INTO', 'VALUES', 'AND', 'OR', 'NOT', 'NULL', 'TRUE', 'FALSE'];
+    switch (true) {
+        case comment_reply === undefined: return 'comment_replyが空の場合はエラー'; break;
+        case comment_reply.length > DATA_LIMIT: return 'comment_replyの文字数がdata_limitを超える場合はエラー'; break;
+        case comment_reply.length === 0: return '0文字の場合はエラー'; break;
+        case comment_reply.match(/[!-/:-@[-`{-~]/g): return '記号を含む場合はエラー'; break;
+        case comment_reply.match(/\s/g): return '空白を含む場合はエラー'; break;
+        case comment_reply.length > 10: return '10文字以上はエラー'; break;
+        case reserved_words.includes(comment_reply): return 'SQLの予約語を含む場合はエラー'; break;
+        default: return 'OK'; break;
+    }
+}
 app.post('/insert_comment_reply', (req, res) => {
     try {
-        const error_check = (comment_reply, DATA_LIMIT) => {
-            const reserved_words = ['SELECT', 'FROM', 'WHERE', 'INSERT', 'DELETE', 'UPDATE', 'DROP', 'ALTER', 'CREATE', 'TABLE', 'INTO', 'VALUES', 'AND', 'OR', 'NOT', 'NULL', 'TRUE', 'FALSE'];
-            switch (true) {
-                case comment_reply === undefined: return {res: 'comment_replyが空の場合はエラー', status: false};
-                case comment_reply.length > DATA_LIMIT: return {res: 'comment_replyの文字数がdata_limitを超える場合はエラー', status: false};
-                case comment_reply.length === 0: return {res: '0文字の場合はエラー', status: false};
-                case comment_reply.match(/[!-/:-@[-`{-~]/g): return {res: '記号を含む場合はエラー', status: false};
-                case comment_reply.match(/\s/g): return {res: '空白を含む場合はエラー', status: false};
-                case comment_reply.length > 10: return {res: '10文字以上はエラー', status: false};
-                case reserved_words.includes(comment_reply): return {res: 'SQLの予約語を含む場合はエラー', status: false};
-                default: return {res: 'OK', status: true};
-            }
-        }
         const user = get_user_with_permission(req);
         user || user.commentable ? null : (()=>{throw new Error('権限がありません')})();
 
-        const error_check_result = error_check(req.body.comment_reply, user.data_limit);
-        error_check_result.status ? null : (()=>{throw new Error(error_check_result.res)})();
+        const error_check_result = error_check_insert_comment_reply(req.body.comment_reply, user.data_limit);
+        error_check_result === 'OK'
+            ? null
+            : (()=>{throw new Error(error_check_result)})();
 
-        db.prepare(`SELECT COUNT(*) AS count FROM comment_replies WHERE user_id = ? AND comment_id = ?`).get(user.user_id, req.body.comment_id).count > 0 ? (()=>{throw new Error('既に同じcomment_replyが存在する場合はエラー')})() : null;
+        db.prepare(`SELECT COUNT(*) AS count FROM comment_replies WHERE user_id = ? AND comment_id = ?`).get(user.user_id, req.body.comment_id).count > 0
+            ? (()=>{throw new Error('既に同じcomment_replyが存在する場合はエラー')})()
+            : null;
 
-        const result = db.prepare(`INSERT INTO comment_replies (user_id, comment_id, reply, created_at, updated_at) VALUES (?, ?, ?, ?, ?)`).run(user.user_id, req.body.comment_id, req.body.comment_reply, now(), now());
-        res.json({message: 'success'});
+        const result =
+            db.prepare(`INSERT INTO comment_replies (user_id, comment_id, reply, created_at, updated_at) VALUES (?, ?, ?, ?, ?)`)
+                .run(user.user_id, req.body.comment_id, req.body.comment_reply, now(), now());
+
+        res.status(200)
+            .json({result: 'success', 
+                comment_reply_id: result.lastInsertRowid
+            });
     } catch (error) {
-        console.log(error);
-        error_response(res, '原因不明のエラー' + error);
+        console.log(error.message);
+        res.status(400).json({result: 'fail', error: error.message});
     }
 });
 
