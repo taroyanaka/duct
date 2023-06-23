@@ -317,8 +317,15 @@ app.get('/read_all', (req, res) => {
     ;
     // req.bodyに ASC,DESC,TAG,USERがある場合は、それぞれの条件に合わせてSQL文を変更する関数
     const read_query = (req) => {
+        try {
         const REQ_TAG = req.query.tag ? req.query.tag : null;
+        // REQ_TAGがtagsテーブルに存在しない場合は、エラーを返す
+        db.prepare(`SELECT * FROM tags WHERE tag = ?`).get(REQ_TAG) === undefined ? (()=>{throw new Error('そんなタグねえよ')})() : null;
         const USER = req.query.user ? req.query.user : null;
+        // req.query.userがSQLとして不正な場合は、エラーを返す
+        USER
+            ? db.prepare(`SELECT * FROM users WHERE username = ?`).get(USER) === undefined
+            ? (()=>{throw new Error('不正なクエリ')})() : null : null;
 
         // req.query.tagがある場合は、WHERE_TAGをWHERE句に、
         // req.query.userがある場合は、WHERE_USERをWHERE句に、
@@ -335,10 +342,23 @@ app.get('/read_all', (req, res) => {
         const QUERY = WHERE ? `${STANDARD_READ_QUERY} ${WHERE} ORDER BY ${ORDER_BY_COLUMN} ${ORDER_BY}` : 
             `${STANDARD_READ_QUERY} ORDER BY ${ORDER_BY_COLUMN} ${ORDER_BY}`
 
+
+
+
+    // SQLインジェクションの余地がある!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    // better-sqlite3のプレースホルダ使え!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+
+
+
         // console.log(['ORDER_BY', ORDER_BY],['ORDER_BY_COLUMN', ORDER_BY_COLUMN],['REQ_TAG', REQ_TAG],['USER', USER],['WHERE_TAG_AND_USER', WHERE_TAG_AND_USER],['WHERE_TAG', WHERE_TAG],['WHERE_USER', WHERE_USER],['WHERE', WHERE],);
         // console.log(QUERY);
 
         return QUERY;
+        } catch (error) {
+            res.status(400).json({result: 'fail', error: error.message});
+        }
     };
 
     // const pre_result = db.prepare(STANDARD_READ_QUERY).all();
@@ -860,7 +880,7 @@ app.post('/insert_link', (req, res) => {
     } catch (error) {
         console.log(error);
         console.log(error.message);
-            res.status(400).json({result: 'fail', error: error.message});
+        res.status(400).json({result: 'fail', error: error.message});
     }
 });
 
