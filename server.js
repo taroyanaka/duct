@@ -299,7 +299,9 @@ app.post('/test', (req, res) => {
 
 
 app.get('/read_all2', (req, res) => {
-    // try {
+    const read_query = (req) => {
+
+        try {
       // req.query.tagがある場合cross tableでtagsテーブルを結合する
       tag_join_option = req.query.tag ? ' LEFT JOIN links_tags ON links.id = links_tags.link_id LEFT JOIN tags ON links_tags.tag_id = tags.id' : '';
       // req.bodyに ASC,DESC,TAG,USERがある場合は、それぞれの条件に合わせてSQL文を変更する関数
@@ -314,32 +316,13 @@ app.get('/read_all2', (req, res) => {
               ? db.prepare(`SELECT * FROM users WHERE username = ?`).get(USER) === undefined
               ? (()=>{throw new Error('不正なクエリ')})() : null : null;
   
-          // req.query.tagがある場合は、WHERE_TAGをWHERE句に、
-          // req.query.userがある場合は、WHERE_USERをWHERE句に、
-          // 両方ある場合は、WHERE_TAG_AND_USERをWHERE句に、
-          // どれもない場合は、nullを返しQUERYにWHERE句が入らない
-        //   const WHERE_TAG_AND_USER = REQ_TAG && USER ? `WHERE tags.tag = '${REQ_TAG}' AND users.username = '${USER}'` : null;
-        //   const WHERE_TAG = REQ_TAG ? `WHERE tags.tag = '${REQ_TAG}'` : null;
-        //   const WHERE_USER = USER ? `WHERE users.username = '${USER}'` : null;
-        //   const WHERE = WHERE_TAG_AND_USER || WHERE_TAG || WHERE_USER || null;
-
-
-
-        // const WHERE_TAG_AND_USER = REQ_TAG && USER ? ' WHERE tags.tag = ? AND users.username = ? ' : null;
-        //   const WHERE_TAG = REQ_TAG ? ' WHERE tags.tag = ? ' : null;
-        //   const WHERE_USER = USER ? ' WHERE users.username = ? ' : null;
-        //   const WHERE = WHERE_TAG_AND_USER || WHERE_TAG || WHERE_USER || null;
-        // 上記を@プレースホルダーに書き換える
         const WHERE_TAG_AND_USER = REQ_TAG && USER ? ' WHERE tags.tag = @tag AND users.username = @user ' : null;
         const WHERE_TAG = REQ_TAG ? ' WHERE tags.tag = @tag ' : null;
         const WHERE_USER = USER ? ' WHERE users.username = @user ' : null;
         const WHERE = WHERE_TAG_AND_USER || WHERE_TAG || WHERE_USER || null;
 
-
-                      
           const ORDER_BY = req.query.order_by ? req.query.order_by : 'DESC';
           const ORDER_BY_COLUMN = req.query.order_by_column ? req.query.order_by_column : 'links.id';
-
 
         //   `${STANDARD_READ_QUERY} ${WHERE} ORDER BY ${ORDER_BY_COLUMN} ${ORDER_BY}`
         // WHEREがある場合のSQL文
@@ -374,22 +357,18 @@ app.get('/read_all2', (req, res) => {
         + ' ORDER BY @order_by_column @order_by'
           ;
 
-          // クエリを生成する。WHEREがある場合は、WHERE + ORDER BYを、ない場合は、ORDER_BYだけを返す
-        //   const QUERY = WHERE ? `${STANDARD_READ_QUERY} ${WHERE} ORDER BY ${ORDER_BY_COLUMN} ${ORDER_BY}` : 
-        //       `${STANDARD_READ_QUERY} ORDER BY ${ORDER_BY_COLUMN} ${ORDER_BY}`
-  
-  
         const QUERY_WITH_PARAM_OBJ = WHERE
-            // ? {query_type: 1 ,query: STANDARD_READ_QUERY_1, order_params: [ORDER_BY_COLUMN, ORDER_BY], where_params: [REQ_TAG, USER]}
             ? {query_type: 1 ,query: STANDARD_READ_QUERY_1, order_by_column: ORDER_BY_COLUMN, order_by: ORDER_BY, req_tag: REQ_TAG, user: USER}
-            // : {query_type: 2 ,query: STANDARD_READ_QUERY_2, order_params: [ORDER_BY_COLUMN, ORDER_BY]};
             : {query_type: 2 ,query: STANDARD_READ_QUERY_2, order_by_column: ORDER_BY_COLUMN, order_by: ORDER_BY};
-  
-  
-      // SQLインジェクションの余地がある!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      // better-sqlite3のプレースホルダ使え!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    //   const stmt = db.prepare('INSERT INTO users (name, email) VALUES (@name, @email)');
-// stmt.run({ name: 'John Doe', email: 'john@example.com' });
+
+        return QUERY_WITH_PARAM_OBJ;
+
+        } catch (error) {
+            console.log(error.message);
+        }
+    };
+
+    const QUERY_WITH_PARAM_OBJ = read_query(req);
       const pre_result = 
         QUERY_WITH_PARAM_OBJ.query_type === 1
             ?
@@ -398,7 +377,7 @@ app.get('/read_all2', (req, res) => {
                 ).all(
                     {
                     tag: QUERY_WITH_PARAM_OBJ.req_tag,
-                       user: QUERY_WITH_PARAM_OBJ.user,
+                    user: QUERY_WITH_PARAM_OBJ.user,
                     order_by_column: QUERY_WITH_PARAM_OBJ.order_by_column,
                     order_by: QUERY_WITH_PARAM_OBJ.order_by
                     }
@@ -414,7 +393,56 @@ app.get('/read_all2', (req, res) => {
                 );
             ;
 
-});  
+            const result = pre_result.map(parent => {
+              const tags = db.prepare(`
+                SELECT
+                tags.id AS id, tags.tag AS tag
+                FROM tags
+                LEFT JOIN links_tags ON tags.id = links_tags.tag_id
+                WHERE links_tags.link_id = ?
+              `).all(parent.id);
+        
+              const comments = db.prepare(`
+                SELECT
+                comments.id AS id, comments.comment AS comment, comments.created_at AS created_at, comments.updated_at AS updated_at,
+                users.id AS user_id, users.username AS username
+                FROM comments
+                LEFT JOIN links ON comments.link_id = links.id
+                LEFT JOIN users ON comments.user_id = users.id
+                WHERE links.id = ?
+              `).all(parent.id);
+        
+                const comments_and_replies = (comments ? comments : []).map(comment => {
+                    const comment_replies = db.prepare(`
+                    SELECT
+                    comment_replies.id AS id, comment_replies.reply AS reply, comment_replies.created_at AS created_at, comment_replies.updated_at AS updated_at,
+                    users.id AS user_id, users.username AS username
+                    FROM comment_replies
+                    LEFT JOIN comments ON comment_replies.comment_id = comments.id
+                    LEFT JOIN users ON comment_replies.user_id = users.id
+                    WHERE comments.id = ?
+                    `).all(comment.id);
+                    return {
+                        ...comments,
+                        comment_replies,
+                    }
+                });
+        
+              return {
+                ...parent,
+                tags,
+                comments_and_replies,
+              };
+            });
+        
+            // res.json(pre_result);
+            res.json(result);
+            // console.log(result);
+          } catch (error) {
+            console.log(error);
+            res.status(400).json({result: 'fail', error: error.message});
+          }
+});
   
 
 // linkテーブル以下のデータを取得する
