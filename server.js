@@ -298,6 +298,21 @@ app.post('/test', (req, res) => {
 });
 
 
+app.get('/read_all3', (req, res) => {
+  const order_by = req.query.order_by || 'id';
+  const order = req.query.order || 'DESC';
+//   const stmt = db.prepare(`SELECT * FROM links ORDER BY ${order_by} ${order}`);
+  const stmt = db.prepare(`SELECT * FROM links ORDER BY @order_by @ABC`);
+//   const stmt = db.prepare(`SELECT * FROM links ORDER BY @order_by DESC`);
+  const links = stmt.all(
+    {
+        order_by: 'id',
+        ABC: 'DESC'
+    }
+    );
+  console.log(links);
+});
+
 app.get('/read_all2', (req, res) => {
     try {
     const read_query = (req) => {
@@ -375,7 +390,7 @@ app.get('/read_all2', (req, res) => {
             ?
                 db.prepare(
                     QUERY_WITH_PARAM_OBJ.query
-                ).all(
+                ).run(
                     {
                     tag: QUERY_WITH_PARAM_OBJ.req_tag,
                     user: QUERY_WITH_PARAM_OBJ.user,
@@ -386,7 +401,7 @@ app.get('/read_all2', (req, res) => {
             :
                 db.prepare(
                     QUERY_WITH_PARAM_OBJ.query
-                ).all(
+                ).run(
                     {
                     order_by_column: QUERY_WITH_PARAM_OBJ.order_by_column,
                     order_by: QUERY_WITH_PARAM_OBJ.order_by
