@@ -298,20 +298,20 @@ app.post('/test', (req, res) => {
 });
 
 
-app.get('/read_all3', (req, res) => {
-  const order_by = req.query.order_by || 'id';
-  const order = req.query.order || 'DESC';
-//   const stmt = db.prepare(`SELECT * FROM links ORDER BY ${order_by} ${order}`);
-  const stmt = db.prepare(`SELECT * FROM links ORDER BY @order_by @ABC`);
-//   const stmt = db.prepare(`SELECT * FROM links ORDER BY @order_by DESC`);
-  const links = stmt.all(
-    {
-        order_by: 'id',
-        ABC: 'DESC'
-    }
-    );
-  console.log(links);
-});
+// app.get('/proof_the_at_placeholder_is_NG_for_DESC_or_ASC', (req, res) => {
+//   const order_by = req.query.order_by || 'id';
+//   const order = req.query.order || 'DESC';
+// //   const stmt = db.prepare(`SELECT * FROM links ORDER BY ${order_by} ${order}`);
+//   const stmt = db.prepare(`SELECT * FROM links ORDER BY @order_by @ABC`);
+// //   const stmt = db.prepare(`SELECT * FROM links ORDER BY @order_by DESC`);
+//   const links = stmt.all(
+//     {
+//         order_by: 'id',
+//         ABC: 'DESC'
+//     }
+//     );
+//   console.log(links);
+// });
 
 app.get('/read_all2', (req, res) => {
     try {
@@ -337,7 +337,7 @@ app.get('/read_all2', (req, res) => {
         const WHERE_USER = USER ? ' WHERE users.username = @user ' : null;
         const WHERE = WHERE_TAG_AND_USER || WHERE_TAG || WHERE_USER || null;
 
-          const ORDER_BY = req.query.order_by ? req.query.order_by : 'DESC';
+          const ORDER_BY = req.query.order_by === 'ASC' ? 'ASC' : 'DESC';
           const ORDER_BY_COLUMN = req.query.order_by_column ? req.query.order_by_column : 'links.id';
 
         //   `${STANDARD_READ_QUERY} ${WHERE} ORDER BY ${ORDER_BY_COLUMN} ${ORDER_BY}`
@@ -354,7 +354,7 @@ app.get('/read_all2', (req, res) => {
           + WHERE
         //   + ' ORDER BY ? ?'
         // @プレースホルダーに書き換える
-          + ' ORDER BY @order_by_column @order_by'
+          + ' ORDER BY @order_by_column ' + ORDER_BY
           ;
 
         //   `${STANDARD_READ_QUERY} ORDER BY ${ORDER_BY_COLUMN} ${ORDER_BY}`
@@ -370,12 +370,12 @@ app.get('/read_all2', (req, res) => {
           + tag_join_option
         //   + ' ORDER BY ? ?'
         // @プレースホルダーに書き換える
-        + ' ORDER BY @order_by_column @order_by'
+        + ' ORDER BY @order_by_column ' + ORDER_BY
           ;
 
         const QUERY_WITH_PARAM_OBJ = WHERE
-            ? {query_type: 1 ,query: STANDARD_READ_QUERY_1, order_by_column: ORDER_BY_COLUMN, order_by: ORDER_BY, req_tag: REQ_TAG, user: USER}
-            : {query_type: 2 ,query: STANDARD_READ_QUERY_2, order_by_column: ORDER_BY_COLUMN, order_by: ORDER_BY};
+            ? {query_type: 1 ,query: STANDARD_READ_QUERY_1, order_by_column: ORDER_BY_COLUMN, req_tag: REQ_TAG, user: USER}
+            : {query_type: 2 ,query: STANDARD_READ_QUERY_2, order_by_column: ORDER_BY_COLUMN};
 
         return QUERY_WITH_PARAM_OBJ;
 
@@ -390,70 +390,69 @@ app.get('/read_all2', (req, res) => {
             ?
                 db.prepare(
                     QUERY_WITH_PARAM_OBJ.query
-                ).run(
+                ).all(
                     {
                     tag: QUERY_WITH_PARAM_OBJ.req_tag,
                     user: QUERY_WITH_PARAM_OBJ.user,
-                    order_by_column: QUERY_WITH_PARAM_OBJ.order_by_column,
-                    order_by: QUERY_WITH_PARAM_OBJ.order_by
+                    order_by_column: QUERY_WITH_PARAM_OBJ.order_by_column
+                    // ,order_by: QUERY_WITH_PARAM_OBJ.order_by
                     }
                 )
             :
                 db.prepare(
                     QUERY_WITH_PARAM_OBJ.query
-                ).run(
+                ).all(
                     {
-                    order_by_column: QUERY_WITH_PARAM_OBJ.order_by_column,
-                    order_by: QUERY_WITH_PARAM_OBJ.order_by
+                    order_by_column: QUERY_WITH_PARAM_OBJ.order_by_column
+                    // ,order_by: QUERY_WITH_PARAM_OBJ.order_by
                     }
                 );
             ;
 
-            const result = pre_result.map(parent => {
-              const tags = db.prepare(`
-                SELECT
-                tags.id AS id, tags.tag AS tag
-                FROM tags
-                LEFT JOIN links_tags ON tags.id = links_tags.tag_id
-                WHERE links_tags.link_id = ?
-              `).all(parent.id);
+            // const result = pre_result.map(parent => {
+            //   const tags = db.prepare(`
+            //     SELECT
+            //     tags.id AS id, tags.tag AS tag
+            //     FROM tags
+            //     LEFT JOIN links_tags ON tags.id = links_tags.tag_id
+            //     WHERE links_tags.link_id = ?
+            //   `).all(parent.id);
         
-              const comments = db.prepare(`
-                SELECT
-                comments.id AS id, comments.comment AS comment, comments.created_at AS created_at, comments.updated_at AS updated_at,
-                users.id AS user_id, users.username AS username
-                FROM comments
-                LEFT JOIN links ON comments.link_id = links.id
-                LEFT JOIN users ON comments.user_id = users.id
-                WHERE links.id = ?
-              `).all(parent.id);
+            //   const comments = db.prepare(`
+            //     SELECT
+            //     comments.id AS id, comments.comment AS comment, comments.created_at AS created_at, comments.updated_at AS updated_at,
+            //     users.id AS user_id, users.username AS username
+            //     FROM comments
+            //     LEFT JOIN links ON comments.link_id = links.id
+            //     LEFT JOIN users ON comments.user_id = users.id
+            //     WHERE links.id = ?
+            //   `).all(parent.id);
         
-                const comments_and_replies = (comments ? comments : []).map(comment => {
-                    const comment_replies = db.prepare(`
-                    SELECT
-                    comment_replies.id AS id, comment_replies.reply AS reply, comment_replies.created_at AS created_at, comment_replies.updated_at AS updated_at,
-                    users.id AS user_id, users.username AS username
-                    FROM comment_replies
-                    LEFT JOIN comments ON comment_replies.comment_id = comments.id
-                    LEFT JOIN users ON comment_replies.user_id = users.id
-                    WHERE comments.id = ?
-                    `).all(comment.id);
-                    return {
-                        ...comments,
-                        comment_replies,
-                    }
-                });
+            //     const comments_and_replies = (comments ? comments : []).map(comment => {
+            //         const comment_replies = db.prepare(`
+            //         SELECT
+            //         comment_replies.id AS id, comment_replies.reply AS reply, comment_replies.created_at AS created_at, comment_replies.updated_at AS updated_at,
+            //         users.id AS user_id, users.username AS username
+            //         FROM comment_replies
+            //         LEFT JOIN comments ON comment_replies.comment_id = comments.id
+            //         LEFT JOIN users ON comment_replies.user_id = users.id
+            //         WHERE comments.id = ?
+            //         `).all(comment.id);
+            //         return {
+            //             ...comments,
+            //             comment_replies,
+            //         }
+            //     });
         
-              return {
-                ...parent,
-                tags,
-                comments_and_replies,
-              };
-            });
+            //   return {
+            //     ...parent,
+            //     tags,
+            //     comments_and_replies,
+            //   };
+            // });
         
-            // res.json(pre_result);
-            res.json(result);
-            // console.log(result);
+            res.json(pre_result);
+            // res.json(result);
         } catch (error) {
         console.log(error);
         res.status(400).json({result: 'fail', error: error.message});
