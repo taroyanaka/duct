@@ -298,7 +298,90 @@ app.post('/test', (req, res) => {
 });
 
 
+app.get('/read_all2', (req, res) => {
+    // try {
+      // req.query.tagがある場合cross tableでtagsテーブルを結合する
+      tag_join_option = req.query.tag ? ' LEFT JOIN links_tags ON links.id = links_tags.link_id LEFT JOIN tags ON links_tags.tag_id = tags.id' : '';
+      const STANDARD_READ_QUERY = `
+      SELECT
+      links.id AS id, links.link AS link, links.created_at AS created_at, links.updated_at AS updated_at,
+      users.id AS user_id, users.username AS username,
+      (SELECT COUNT(*) FROM likes WHERE likes.link_id = links.id) AS like_count
+      FROM links
+      LEFT JOIN users ON links.user_id = users.id
+      LEFT JOIN likes ON links.id = likes.link_id`
+      + tag_join_option
+      ;
+      // req.bodyに ASC,DESC,TAG,USERがある場合は、それぞれの条件に合わせてSQL文を変更する関数
+    //   const read_query = (req) => {
+    //       try {
+          const REQ_TAG = req.query.tag ? req.query.tag : null;
+          // REQ_TAGがtagsテーブルに存在しない場合は、エラーを返す
+        //   db.prepare(`SELECT * FROM tags WHERE tag = ?`).get(REQ_TAG) === undefined ? (()=>{throw new Error('そんなタグねえよ')})() : null;
+          const USER = req.query.user ? req.query.user : null;
+          // req.query.userがSQLとして不正な場合は、エラーを返す
+          USER
+              ? db.prepare(`SELECT * FROM users WHERE username = ?`).get(USER) === undefined
+              ? (()=>{throw new Error('不正なクエリ')})() : null : null;
+  
+          // req.query.tagがある場合は、WHERE_TAGをWHERE句に、
+          // req.query.userがある場合は、WHERE_USERをWHERE句に、
+          // 両方ある場合は、WHERE_TAG_AND_USERをWHERE句に、
+          // どれもない場合は、nullを返しQUERYにWHERE句が入らない
+          const WHERE_TAG_AND_USER = REQ_TAG && USER ? `WHERE tags.tag = '${REQ_TAG}' AND users.username = '${USER}'` : null;
+          const WHERE_TAG = REQ_TAG ? `WHERE tags.tag = '${REQ_TAG}'` : null;
+          const WHERE_USER = USER ? `WHERE users.username = '${USER}'` : null;
+          const WHERE = WHERE_TAG_AND_USER || WHERE_TAG || WHERE_USER || null;
+                      
+          const ORDER_BY = req.query.order_by ? req.query.order_by : 'DESC';
+          const ORDER_BY_COLUMN = req.query.order_by_column ? req.query.order_by_column : 'links.id';
+          // クエリを生成する。WHEREがある場合は、WHERE + ORDER BYを、ない場合は、ORDER_BYだけを返す
+          const QUERY = WHERE ? `${STANDARD_READ_QUERY} ${WHERE} ORDER BY ${ORDER_BY_COLUMN} ${ORDER_BY}` : 
+              `${STANDARD_READ_QUERY} ORDER BY ${ORDER_BY_COLUMN} ${ORDER_BY}`
+  
+  
+  
+  
+      // SQLインジェクションの余地がある!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      // better-sqlite3のプレースホルダ使え!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      // const QUERYをプレースホルダに渡すための配列に変換する
+      const QUERY_ARRAY_1 = WHERE ? [STANDARD_READ_QUERY, WHERE, ORDER_BY_COLUMN, ORDER_BY] : null;
+      const QUERY_ARRAY_2 = WHERE ? null : [STANDARD_READ_QUERY, ORDER_BY_COLUMN, ORDER_BY];
+  
+          // console.log(['ORDER_BY', ORDER_BY],['ORDER_BY_COLUMN', ORDER_BY_COLUMN],['REQ_TAG', REQ_TAG],['USER', USER],['WHERE_TAG_AND_USER', WHERE_TAG_AND_USER],['WHERE_TAG', WHERE_TAG],['WHERE_USER', WHERE_USER],['WHERE', WHERE],);
+          // console.log(QUERY);
+  
+          // return QUERY;
+    //   return QUERY_ARRAY_1 ? {QUERY_ARRAY_1: QUERY_ARRAY_1} : {QUERY_ARRAY_2: QUERY_ARRAY_2}
+    //   return QUERY_ARRAY_1;
 
+    //   return QUERY;
+
+    //       } catch (error) {
+    //           res.status(400).json({result: 'fail', error: error.message});
+    //       }
+    //   };
+  
+      // const pre_result = db.prepare(STANDARD_READ_QUERY).all();
+      // const pre_result = db.prepare(read_query(req)).all();
+      // const QUERY_ARRAY_for_pre_result = 
+      const QUERY_ARRAY_for_pre_result_1 = null;
+      const QUERY_ARRAY_for_pre_result_2 = null;
+    //   const resonse_data = read_query(req).QUERY_ARRAY_1
+    //       ? QUERY_ARRAY_for_pre_result_1 = read_query(req).QUERY_ARRAY_1
+    //       : QUERY_ARRAY_for_pre_result_2 = read_query(req).QUERY_ARRAY_2;
+
+        //   console.log(resonse_data);
+          console.log(QUERY_ARRAY_1);
+          console.log(QUERY_ARRAY_2);
+    res.json(QUERY_ARRAY_1);
+
+    // } catch (error) {
+    //     res.status(400).json({result: 'fail', error: error.message});
+    // }
+
+});  
+  
 
 // linkテーブル以下のデータを取得する
 app.get('/read_all', (req, res) => {
@@ -320,7 +403,7 @@ app.get('/read_all', (req, res) => {
         try {
         const REQ_TAG = req.query.tag ? req.query.tag : null;
         // REQ_TAGがtagsテーブルに存在しない場合は、エラーを返す
-        db.prepare(`SELECT * FROM tags WHERE tag = ?`).get(REQ_TAG) === undefined ? (()=>{throw new Error('そんなタグねえよ')})() : null;
+        // db.prepare(`SELECT * FROM tags WHERE tag = ?`).get(REQ_TAG) === undefined ? (()=>{throw new Error('そんなタグねえよ')})() : null;
         const USER = req.query.user ? req.query.user : null;
         // req.query.userがSQLとして不正な場合は、エラーを返す
         USER
@@ -341,43 +424,14 @@ app.get('/read_all', (req, res) => {
         // クエリを生成する。WHEREがある場合は、WHERE + ORDER BYを、ない場合は、ORDER_BYだけを返す
         const QUERY = WHERE ? `${STANDARD_READ_QUERY} ${WHERE} ORDER BY ${ORDER_BY_COLUMN} ${ORDER_BY}` : 
             `${STANDARD_READ_QUERY} ORDER BY ${ORDER_BY_COLUMN} ${ORDER_BY}`
-
-
-
-
-    // SQLインジェクションの余地がある!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    // better-sqlite3のプレースホルダ使え!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    // const QUERYをプレースホルダに渡すための配列に変換する
-    const QUERY_ARRAY_1 = WHERE ? [STANDARD_READ_QUERY, WHERE, ORDER_BY_COLUMN, ORDER_BY] : null;
-    const QUERY_ARRAY_2 = WHERE ? null : [STANDARD_READ_QUERY, ORDER_BY_COLUMN, ORDER_BY];
-
-
-
-
-        // console.log(['ORDER_BY', ORDER_BY],['ORDER_BY_COLUMN', ORDER_BY_COLUMN],['REQ_TAG', REQ_TAG],['USER', USER],['WHERE_TAG_AND_USER', WHERE_TAG_AND_USER],['WHERE_TAG', WHERE_TAG],['WHERE_USER', WHERE_USER],['WHERE', WHERE],);
-        // console.log(QUERY);
-
-        // return QUERY;
-        return QUERY_ARRAY_1 ? {QUERY_ARRAY_1: QUERY_ARRAY_1} : {QUERY_ARRAY_2: QUERY_ARRAY_2}
+            ;
+            return QUERY;
         } catch (error) {
-            res.status(400).json({result: 'fail', error: error.message});
+            console.log(error.message);
         }
     };
 
-    // const pre_result = db.prepare(STANDARD_READ_QUERY).all();
-    // const pre_result = db.prepare(read_query(req)).all();
-    // const QUERY_ARRAY_for_pre_result = 
-    const QUERY_ARRAY_for_pre_result_1 = null;
-    const QUERY_ARRAY_for_pre_result_2 = null;
-    read_query(req).QUERY_ARRAY_1
-        ? QUERY_ARRAY_for_pre_result_1 = read_query(req).QUERY_ARRAY_1
-        : QUERY_ARRAY_for_pre_result_2 = read_query(req).QUERY_ARRAY_2;
-
-        QUERY_ARRAY_for_pre_result_1 ?
-            db.prepare
-
-
-        // db.prepare(read_query(req)).all();
+        const pre_result = db.prepare(read_query(req)).all();
 
 
     const result = pre_result.map(parent => {
