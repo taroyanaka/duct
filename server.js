@@ -302,16 +302,6 @@ app.get('/read_all2', (req, res) => {
     // try {
       // req.query.tagがある場合cross tableでtagsテーブルを結合する
       tag_join_option = req.query.tag ? ' LEFT JOIN links_tags ON links.id = links_tags.link_id LEFT JOIN tags ON links_tags.tag_id = tags.id' : '';
-      const STANDARD_READ_QUERY = `
-      SELECT
-      links.id AS id, links.link AS link, links.created_at AS created_at, links.updated_at AS updated_at,
-      users.id AS user_id, users.username AS username,
-      (SELECT COUNT(*) FROM likes WHERE likes.link_id = links.id) AS like_count
-      FROM links
-      LEFT JOIN users ON links.user_id = users.id
-      LEFT JOIN likes ON links.id = likes.link_id`
-      + tag_join_option
-      ;
       // req.bodyに ASC,DESC,TAG,USERがある場合は、それぞれの条件に合わせてSQL文を変更する関数
     //   const read_query = (req) => {
     //       try {
@@ -328,57 +318,101 @@ app.get('/read_all2', (req, res) => {
           // req.query.userがある場合は、WHERE_USERをWHERE句に、
           // 両方ある場合は、WHERE_TAG_AND_USERをWHERE句に、
           // どれもない場合は、nullを返しQUERYにWHERE句が入らない
-          const WHERE_TAG_AND_USER = REQ_TAG && USER ? `WHERE tags.tag = '${REQ_TAG}' AND users.username = '${USER}'` : null;
-          const WHERE_TAG = REQ_TAG ? `WHERE tags.tag = '${REQ_TAG}'` : null;
-          const WHERE_USER = USER ? `WHERE users.username = '${USER}'` : null;
-          const WHERE = WHERE_TAG_AND_USER || WHERE_TAG || WHERE_USER || null;
+        //   const WHERE_TAG_AND_USER = REQ_TAG && USER ? `WHERE tags.tag = '${REQ_TAG}' AND users.username = '${USER}'` : null;
+        //   const WHERE_TAG = REQ_TAG ? `WHERE tags.tag = '${REQ_TAG}'` : null;
+        //   const WHERE_USER = USER ? `WHERE users.username = '${USER}'` : null;
+        //   const WHERE = WHERE_TAG_AND_USER || WHERE_TAG || WHERE_USER || null;
+
+
+
+        // const WHERE_TAG_AND_USER = REQ_TAG && USER ? ' WHERE tags.tag = ? AND users.username = ? ' : null;
+        //   const WHERE_TAG = REQ_TAG ? ' WHERE tags.tag = ? ' : null;
+        //   const WHERE_USER = USER ? ' WHERE users.username = ? ' : null;
+        //   const WHERE = WHERE_TAG_AND_USER || WHERE_TAG || WHERE_USER || null;
+        // 上記を@プレースホルダーに書き換える
+        const WHERE_TAG_AND_USER = REQ_TAG && USER ? ' WHERE tags.tag = @tag AND users.username = @user ' : null;
+        const WHERE_TAG = REQ_TAG ? ' WHERE tags.tag = @tag ' : null;
+        const WHERE_USER = USER ? ' WHERE users.username = @user ' : null;
+        const WHERE = WHERE_TAG_AND_USER || WHERE_TAG || WHERE_USER || null;
+
+
                       
           const ORDER_BY = req.query.order_by ? req.query.order_by : 'DESC';
           const ORDER_BY_COLUMN = req.query.order_by_column ? req.query.order_by_column : 'links.id';
+
+
+        //   `${STANDARD_READ_QUERY} ${WHERE} ORDER BY ${ORDER_BY_COLUMN} ${ORDER_BY}`
+        // WHEREがある場合のSQL文
+          const STANDARD_READ_QUERY_1 = `
+          SELECT
+          links.id AS id, links.link AS link, links.created_at AS created_at, links.updated_at AS updated_at,
+          users.id AS user_id, users.username AS username,
+          (SELECT COUNT(*) FROM likes WHERE likes.link_id = links.id) AS like_count
+          FROM links
+          LEFT JOIN users ON links.user_id = users.id
+          LEFT JOIN likes ON links.id = likes.link_id`
+          + tag_join_option
+          + WHERE
+        //   + ' ORDER BY ? ?'
+        // @プレースホルダーに書き換える
+          + ' ORDER BY @order_by_column @order_by'
+          ;
+
+        //   `${STANDARD_READ_QUERY} ORDER BY ${ORDER_BY_COLUMN} ${ORDER_BY}`
+        // WHEREがない場合のSQL文
+          const STANDARD_READ_QUERY_2 = `
+          SELECT
+          links.id AS id, links.link AS link, links.created_at AS created_at, links.updated_at AS updated_at,
+          users.id AS user_id, users.username AS username,
+          (SELECT COUNT(*) FROM likes WHERE likes.link_id = links.id) AS like_count
+          FROM links
+          LEFT JOIN users ON links.user_id = users.id
+          LEFT JOIN likes ON links.id = likes.link_id`
+          + tag_join_option
+        //   + ' ORDER BY ? ?'
+        // @プレースホルダーに書き換える
+        + ' ORDER BY @order_by_column @order_by'
+          ;
+
           // クエリを生成する。WHEREがある場合は、WHERE + ORDER BYを、ない場合は、ORDER_BYだけを返す
-          const QUERY = WHERE ? `${STANDARD_READ_QUERY} ${WHERE} ORDER BY ${ORDER_BY_COLUMN} ${ORDER_BY}` : 
-              `${STANDARD_READ_QUERY} ORDER BY ${ORDER_BY_COLUMN} ${ORDER_BY}`
+        //   const QUERY = WHERE ? `${STANDARD_READ_QUERY} ${WHERE} ORDER BY ${ORDER_BY_COLUMN} ${ORDER_BY}` : 
+        //       `${STANDARD_READ_QUERY} ORDER BY ${ORDER_BY_COLUMN} ${ORDER_BY}`
   
   
+        const QUERY_WITH_PARAM_OBJ = WHERE
+            // ? {query_type: 1 ,query: STANDARD_READ_QUERY_1, order_params: [ORDER_BY_COLUMN, ORDER_BY], where_params: [REQ_TAG, USER]}
+            ? {query_type: 1 ,query: STANDARD_READ_QUERY_1, order_by_column: ORDER_BY_COLUMN, order_by: ORDER_BY, req_tag: REQ_TAG, user: USER}
+            // : {query_type: 2 ,query: STANDARD_READ_QUERY_2, order_params: [ORDER_BY_COLUMN, ORDER_BY]};
+            : {query_type: 2 ,query: STANDARD_READ_QUERY_2, order_by_column: ORDER_BY_COLUMN, order_by: ORDER_BY};
   
   
       // SQLインジェクションの余地がある!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       // better-sqlite3のプレースホルダ使え!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      // const QUERYをプレースホルダに渡すための配列に変換する
-      const QUERY_ARRAY_1 = WHERE ? [STANDARD_READ_QUERY, WHERE, ORDER_BY_COLUMN, ORDER_BY] : null;
-      const QUERY_ARRAY_2 = WHERE ? null : [STANDARD_READ_QUERY, ORDER_BY_COLUMN, ORDER_BY];
-  
-          // console.log(['ORDER_BY', ORDER_BY],['ORDER_BY_COLUMN', ORDER_BY_COLUMN],['REQ_TAG', REQ_TAG],['USER', USER],['WHERE_TAG_AND_USER', WHERE_TAG_AND_USER],['WHERE_TAG', WHERE_TAG],['WHERE_USER', WHERE_USER],['WHERE', WHERE],);
-          // console.log(QUERY);
-  
-          // return QUERY;
-    //   return QUERY_ARRAY_1 ? {QUERY_ARRAY_1: QUERY_ARRAY_1} : {QUERY_ARRAY_2: QUERY_ARRAY_2}
-    //   return QUERY_ARRAY_1;
-
-    //   return QUERY;
-
-    //       } catch (error) {
-    //           res.status(400).json({result: 'fail', error: error.message});
-    //       }
-    //   };
-  
-      // const pre_result = db.prepare(STANDARD_READ_QUERY).all();
-      // const pre_result = db.prepare(read_query(req)).all();
-      // const QUERY_ARRAY_for_pre_result = 
-      const QUERY_ARRAY_for_pre_result_1 = null;
-      const QUERY_ARRAY_for_pre_result_2 = null;
-    //   const resonse_data = read_query(req).QUERY_ARRAY_1
-    //       ? QUERY_ARRAY_for_pre_result_1 = read_query(req).QUERY_ARRAY_1
-    //       : QUERY_ARRAY_for_pre_result_2 = read_query(req).QUERY_ARRAY_2;
-
-        //   console.log(resonse_data);
-          console.log(QUERY_ARRAY_1);
-          console.log(QUERY_ARRAY_2);
-    res.json(QUERY_ARRAY_1);
-
-    // } catch (error) {
-    //     res.status(400).json({result: 'fail', error: error.message});
-    // }
+    //   const stmt = db.prepare('INSERT INTO users (name, email) VALUES (@name, @email)');
+// stmt.run({ name: 'John Doe', email: 'john@example.com' });
+      const pre_result = 
+        QUERY_WITH_PARAM_OBJ.query_type === 1
+            ?
+                db.prepare(
+                    QUERY_WITH_PARAM_OBJ.query
+                ).all(
+                    {
+                    tag: QUERY_WITH_PARAM_OBJ.req_tag,
+                       user: QUERY_WITH_PARAM_OBJ.user,
+                    order_by_column: QUERY_WITH_PARAM_OBJ.order_by_column,
+                    order_by: QUERY_WITH_PARAM_OBJ.order_by
+                    }
+                )
+            :
+                db.prepare(
+                    QUERY_WITH_PARAM_OBJ.query
+                ).all(
+                    {
+                    order_by_column: QUERY_WITH_PARAM_OBJ.order_by_column,
+                    order_by: QUERY_WITH_PARAM_OBJ.order_by
+                    }
+                );
+            ;
 
 });  
   
