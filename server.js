@@ -299,6 +299,7 @@ app.post('/test', (req, res) => {
 
 
 app.get('/read_all2', (req, res) => {
+    try {
     const read_query = (req) => {
 
         try {
@@ -438,10 +439,10 @@ app.get('/read_all2', (req, res) => {
             // res.json(pre_result);
             res.json(result);
             // console.log(result);
-          } catch (error) {
-            console.log(error);
-            res.status(400).json({result: 'fail', error: error.message});
-          }
+        } catch (error) {
+        console.log(error);
+        res.status(400).json({result: 'fail', error: error.message});
+        }
 });
   
 
