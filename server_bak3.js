@@ -1,5 +1,8 @@
-const test_mode = () => true;
-// const test_mode = () => false;
+// const test_mode = () => true;
+const test_mode = () => false;
+
+// test_modeをexportする
+// module.exports.test_mode = test_mode;
 
 
 // package.json for glitch.com
@@ -170,347 +173,17 @@ const test_mode = () => true;
 // INSERT INTO users (user_permission_id, username, userpassword, created_at, updated_at) VALUES (3, 'pro1', 'pro_pass1', DATETIME('now'), DATETIME('now'));
 
 
-
-function db_init(DB) {
-
-    // DB.nameがduct_test.sqlite3ではない場合は終了する
-    const CHECK_DB_RES = DB.name !== './duct_test.sqlite3' ? 'DB.nameが./duct_test.sqlite3ではありません' : null;
-    if(CHECK_DB_RES === 'DB.nameが./duct_test.sqlite3ではありません') {
-        return
-    }
-    const db = DB;
-
-    // user_permissionテーブルを削除する
-    db.exec('DROP TABLE IF EXISTS user_permission;');
-
-    // usersテーブルを削除する
-    db.exec('DROP TABLE IF EXISTS users;');
-
-    // linksテーブルを削除する
-    db.exec('DROP TABLE IF EXISTS links;');
-
-    // likesテーブルを削除する
-    db.exec('DROP TABLE IF EXISTS likes;');
-
-    // links_tagsテーブルを削除する
-    db.exec('DROP TABLE IF EXISTS links_tags;');
-
-    // tagsテーブルを削除する
-    db.exec('DROP TABLE IF EXISTS tags;');
-
-    // commentsテーブルを削除する
-    db.exec('DROP TABLE IF EXISTS comments;');
-
-    // comment_repliesテーブルを削除する
-    db.exec('DROP TABLE IF EXISTS comment_replies;');
-
-    // user_permissionテーブルを作成する
-    db.exec(`
-    CREATE TABLE user_permission (
-        id INTEGER PRIMARY KEY,
-        permission TEXT NOT NULL,
-        readable INTEGER NOT NULL,
-        writable INTEGER NOT NULL,
-        deletable INTEGER NOT NULL, 
-        likable INTEGER NOT NULL,
-        commentable INTEGER NOT NULL,
-        data_limit INTEGER NOT NULL,
-        created_at DATETIME NOT NULL,
-        updated_at DATETIME NOT NULL
-    );
-    `);
-
-    // usersテーブルを作成する
-    db.exec(`
-    CREATE TABLE users (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_permission_id INTEGER NOT NULL,
-        username TEXT NOT NULL,
-        userpassword TEXT NOT NULL,
-        created_at DATETIME NOT NULL,
-        updated_at DATETIME NOT NULL,
-        FOREIGN KEY (user_permission_id) REFERENCES user_permission(id)
-    );
-    `);
-
-    // linksテーブルを作成する
-    db.exec(`
-    CREATE TABLE links (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        link TEXT NOT NULL,
-        user_id INTEGER NOT NULL,
-        created_at DATETIME NOT NULL,
-        updated_at DATETIME NOT NULL,
-        FOREIGN KEY (user_id) REFERENCES users(id)
-    );
-    `);
-
-    // likesテーブルを作成する
-    db.exec(`
-    CREATE TABLE likes (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        link_id INTEGER NOT NULL,
-        user_id INTEGER NOT NULL,
-        created_at DATETIME NOT NULL,
-        updated_at DATETIME NOT NULL,
-        FOREIGN KEY (link_id) REFERENCES link(id)
-    );
-    `);
-
-    // links_tagsテーブルを作成する
-    db.exec(`
-    CREATE TABLE links_tags (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        link_id INTEGER NOT NULL,
-        tag_id INTEGER NOT NULL,
-        created_at DATETIME NOT NULL,
-        updated_at DATETIME NOT NULL
-    );
-    `);
-
-    // tagsテーブルを作成する
-    db.exec(`
-    CREATE TABLE tags (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        tag TEXT NOT NULL
-    );
-    `);
-
-    // commentsテーブルを作成する
-    db.exec(`
-    CREATE TABLE comments (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        link_id INTEGER NOT NULL,
-        user_id INTEGER NOT NULL,
-        comment TEXT NOT NULL,
-        created_at DATETIME NOT NULL,
-        updated_at DATETIME NOT NULL,
-        FOREIGN KEY (link_id) REFERENCES link(id)
-    );
-    `);
-
-    // comment_repliesテーブルを作成する
-    db.exec(`
-    CREATE TABLE comment_replies (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        comment_id INTEGER NOT NULL,
-        user_id INTEGER NOT NULL,
-        reply TEXT NOT NULL,
-        created_at DATETIME NOT NULL,
-        updated_at DATETIME NOT NULL,
-        FOREIGN KEY (comment_id) REFERENCES comments(id)
-    );
-    `);
-
-    // user_permissionテーブルにレコードを挿入する
-    db.exec(`
-    INSERT INTO user_permission (
-        id,
-        permission,
-        readable,
-        writable,
-        deletable,
-        likable,
-        commentable,
-        data_limit,
-        created_at,
-        updated_at
-    ) VALUES (
-        1,
-        'guest',
-        1,
-        0,
-        0,
-        0,
-        0,
-        200,
-        DATETIME('now'),
-        DATETIME('now')
-    );
-    `);
-
-    db.exec(`
-    INSERT INTO user_permission (
-        id,
-        permission,
-        readable,
-        writable,
-        deletable,
-        likable,
-        commentable,
-        data_limit,
-        created_at,
-        updated_at
-    ) VALUES (
-        2,
-        'user',
-        1,
-        1,
-        1,
-        1,
-        1,
-        40000,
-        DATETIME('now'),
-        DATETIME('now')
-    );
-    `);
-
-    db.exec(`
-    INSERT INTO user_permission (
-        id,
-        permission,
-        readable,
-        writable,
-        deletable,
-        likable,
-        commentable,
-        data_limit,
-        created_at,
-        updated_at
-    ) VALUES (
-        3,
-        'pro',
-        1,
-        1,
-        1,
-        1,
-        1,
-        400000,
-        DATETIME('now'),
-        DATETIME('now')
-    );
-    `);
-
-    // usersテーブルにレコードを挿入する
-    db.exec(`
-    INSERT INTO users (
-        user_permission_id,
-        username,
-        userpassword,
-        created_at,
-        updated_at
-    ) VALUES (
-        1,
-        'GUEST',
-        'GUEST_PASS',
-        DATETIME('now'),
-        DATETIME('now')
-    );
-    `);
-
-    db.exec(`
-    INSERT INTO users (
-        user_permission_id,
-        username,
-        userpassword,
-        created_at,
-        updated_at
-    ) VALUES (
-        2,
-        'user1',
-        'user_pass1',
-        DATETIME('now'),
-        DATETIME('now')
-    );
-    `);
-
-    db.exec(`
-    INSERT INTO users (
-        user_permission_id,
-        username,
-        userpassword,
-        created_at,
-        updated_at
-    ) VALUES (
-        2,
-        'user2',
-        'user_pass2',
-        DATETIME('now'),
-        DATETIME('now')
-    );
-    `);
-
-    db.exec(`
-    INSERT INTO users (
-        user_permission_id,
-        username,
-        userpassword,
-        created_at,
-        updated_at
-    ) VALUES (
-        3,
-        'pro1',
-        'pro_pass1',
-        DATETIME('now'),
-        DATETIME('now')
-    );
-    `);
-
-    db.exec(`
-    INSERT INTO users (
-        user_permission_id,
-        username,
-        userpassword,
-        created_at,
-        updated_at
-    ) VALUES (
-        3,
-        'testuser',
-        'password',
-        DATETIME('now'),
-        DATETIME('now')
-    );
-    `);
-
-
-}
-
-function db_close(DB){
-
-    // DB.nameがduct_test.sqlite3ではない場合は終了する
-    const CHECK_DB_RES = DB.name !== './duct_test.sqlite3' ? 'DB.nameが./duct_test.sqlite3ではありません' : null;
-    if(CHECK_DB_RES === 'DB.nameが./duct_test.sqlite3ではありません') {
-        return
-    }
-    const db = DB;
-
-    // user_permissionテーブルを削除する
-    db.exec('DROP TABLE IF EXISTS user_permission;');
-
-    // usersテーブルを削除する
-    db.exec('DROP TABLE IF EXISTS users;');
-
-    // linksテーブルを削除する
-    db.exec('DROP TABLE IF EXISTS links;');
-
-    // likesテーブルを削除する
-    db.exec('DROP TABLE IF EXISTS likes;');
-
-    // links_tagsテーブルを削除する
-    db.exec('DROP TABLE IF EXISTS links_tags;');
-
-    // tagsテーブルを削除する
-    db.exec('DROP TABLE IF EXISTS tags;');
-
-    // commentsテーブルを削除する
-    db.exec('DROP TABLE IF EXISTS comments;');
-
-    // comment_repliesテーブルを削除する
-    db.exec('DROP TABLE IF EXISTS comment_replies;');
-
-}
-
 const R = require('ramda');
 const validator = require('validator');
 const express = require('express');
 const sqlite = require('better-sqlite3');
 
 
-// test_modeがtrueの時は、テスト用のDBのduct_test.sqlite3を使う。falseの時はduct.sqlite3を使う
-const db = test_mode() === true ? new sqlite('./duct_test.sqlite3') : new sqlite('./duct.sqlite3');
-
-
+// test_modeがtrueの時は、テスト用のDBの:memoryを使う。falseの時はduct.sqlite3を使う
+const db = test_mode() === true ? sqlite(':memory:') : new sqlite('./duct.sqlite3');
 // dbをexportする
+module.exports = db;
+// let db = sqlite3(':memory:');
 // const db = new sqlite('./duct.sqlite3');
 
 
@@ -520,48 +193,17 @@ app.use(bodyParser.json());
 const cors = require('cors');
 app.use(cors());
 const port = 8000;
+if(test_mode() === false){
+    app.listen(port, "0.0.0.0", () => console.log(`App listening!! at http://localhost:${port}`) );
+}
+// app.listen(port, "0.0.0.0", () => console.log(`App listening!! at http://localhost:${port}`) );
+// app.listen(port, () => console.log(`App listening!! at http://localhost:${port}`) );
 
 const now = () => new Date().toISOString();
 // expressの一般的なエラーのレスポンス。引数としてエラー文字列を含めて呼び出す。statusコードも含めて返す
 const error_response = (res, status_code, error_message) => res.status(status_code).json({error: error_message});
 
 
-// test_mode() === trueかつNAMEとPASSWORDが一致し、test_modeがTEST_MODEである時にduct_test.sqlite3を初期化する
-app.post('/test_db_init', (req, res) => {
-try {
-    const TEST_MODE = req.body.test_mode;
-        // overwrite_password関数はID/PASSWORDの秘匿化のための応急処置として使用する
-        // ローカル環境でも.dataという隠しフォルダを使うことで、秘匿化を実現する
-        // glitch.comにおいてpravateな情報を扱う場合は、.dataフォルダに格納する
-        // REQ.body.nameがlines[0]と一致し、
-        // REQ.body.passwordがlines[2]と一致する場合に'OK'を返す
-        const overwrite_password_FOR_TEST = (REQ) => {
-            try {
-            const FILE_NAME = './.data/TEST_MODE_for_overwriting_id_password.csv';
-            const fs = require('fs');
-            const line = fs.readFileSync(FILE_NAME, 'utf8').split(',');
-            const result = REQ.body.name === line[0] && REQ.body.password === line[2] ? 'OK' : 'ERROR';
-            if (result === 'ERROR') {
-                return 'ERROR';
-            };
-            // return [REQ.body.name, result];
-            return 'OK';
-            } catch (error) {
-                (()=>{throw new Error('無効な認証(overwrite_password)')})()
-            }
-        };
-    const test_can = (overwrite_password_FOR_TEST(req) === 'OK' && req.body.test_mode === 'TEST_MODE')
-        ? 'OK'
-        : (()=>{throw new Error('権限がありません')})();
-    // test_mode() === trueかつNAMEとPASSWORDが一致し、test_modeがTEST_MODEである時にduct_test.sqlite3を初期化する
-    (test_mode() === true && test_can === 'OK') ? db_init(db) : (()=>{throw new Error('何かのエラー')})();
-    req.body.test_mode_close === undefined ? null :
-        req.body.test_mode_close === 'TEST_MODE_CLOSE' ? db_close(db) : null;
-    res.status(200).json({message: 'OK'});
-} catch (error) {
-    res.status(400).json({result: 'fail', error: error.message});
-}
-});
 
 
 
@@ -582,7 +224,7 @@ const get_user_with_permission = (REQ) => {
         const FILE_NAME = './.data/for_overwriting_id_password.csv';
         // csvファイルを読み込んで','でsplitしてconsole.logする
         const fs = require('fs');
-        const line = fs.readFileSync(FILE_NAME, 'utf8').split(',');
+        const line = fs.readFileSync(FILE_NAME, 'utf8').split(',');    
         const result = REQ.body.name === line[0] && REQ.body.password === line[2] ? line[1] : REQ.body.password;
         return [REQ.body.name, result];
         } catch (error) {
@@ -1430,3 +1072,26 @@ app.post('/insert_link', (req, res) => {
 });
 
 
+if(test_mode() === true){
+    // test.jsのためにexportする
+    module.exports = app;
+    // test.jsのためにdbをexportする
+    module.exports.db = db;
+
+    module.exports.test_mode = test_mode;
+    // test.jsのためにget_user_with_permissionをexportする
+    module.exports.get_user_with_permission = get_user_with_permission;
+    // test.jsのためにerror_check_for_insert_linkをexportする
+    module.exports.error_check_for_insert_link = error_check_for_insert_link;
+    // test.jsのためにerror_check_for_insert_tagをexportする
+    module.exports.error_check_for_insert_tag = error_check_for_insert_tag;
+    // get_tag_id_by_tag_name_for_insert_tag
+    module.exports.get_tag_id_by_tag_name_for_insert_tag = get_tag_id_by_tag_name_for_insert_tag
+    // insert_tag_for_insert_tag
+    module.exports.insert_tag_for_insert_tag = insert_tag_for_insert_tag;
+    // make_tag_and_insert_tag_for_insert_tag
+    module.exports.make_tag_and_insert_tag_for_insert_tag = make_tag_and_insert_tag_for_insert_tag;
+} else {
+    module.exports.test_mode = test_mode;
+    // app.listen(port, "0.0.0.0", () => console.log(`App listening!! at http://localhost:${port}`) );
+}
