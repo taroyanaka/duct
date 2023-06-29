@@ -172,10 +172,14 @@ const test_mode = () => true;
 
 
 function db_init(DB) {
+    try {
+    console.log('db_init start');
 
     // DB.nameがduct_test.sqlite3ではない場合は終了する
-    const CHECK_DB_RES = DB.name !== './duct_test.sqlite3' ? 'DB.nameが./duct_test.sqlite3ではありません' : null;
-    if(CHECK_DB_RES === 'DB.nameが./duct_test.sqlite3ではありません') {
+    const CHECK_DB_RES = DB.name === './duct_test.sqlite3' ? 'OK' : 'ERROR';
+    console.log('CHECK_DB_RES', CHECK_DB_RES);
+    if(CHECK_DB_RES === 'ERROR') {
+        console.log(CHECK_DB_RES);
         return
     }
     const db = DB;
@@ -462,7 +466,40 @@ function db_init(DB) {
     );
     `);
 
+    console.log('db_init done');
+    } catch (error) {
+            console.log(error);
+    }
+}
+function db_init2(DB) {
+    try {
+    console.log('db_init start');
 
+    // DB.nameがduct_test.sqlite3ではない場合は終了する
+    const CHECK_DB_RES = DB.name === './duct_test.sqlite3' ? 'OK' : 'ERROR';
+    console.log('CHECK_DB_RES', CHECK_DB_RES);
+    if(CHECK_DB_RES === 'ERROR') {
+        console.log(CHECK_DB_RES);
+        (()=>{throw new Error('test dbでは無い')})()
+    }
+    const { exec } = require('child_process');
+
+    const command = 'sqlite3 ./duct_test.sqlite3 < ./init.sql';
+
+    exec(command, (error, stdout, stderr) => {
+    if (error) {
+        console.error(`exec error: ${error}`);
+        return;
+    }
+    console.log(`stdout: ${stdout}`);
+    console.error(`stderr: ${stderr}`);
+
+    console.log('db_init done');
+    });
+    } catch (error) {
+        console.log('db_init error');
+        console.log(error);
+    }
 }
 
 function db_close(DB){
@@ -473,31 +510,55 @@ function db_close(DB){
         return
     }
     const db = DB;
-
     // user_permissionテーブルを削除する
     db.exec('DROP TABLE IF EXISTS user_permission;');
-
     // usersテーブルを削除する
     db.exec('DROP TABLE IF EXISTS users;');
-
     // linksテーブルを削除する
     db.exec('DROP TABLE IF EXISTS links;');
-
     // likesテーブルを削除する
     db.exec('DROP TABLE IF EXISTS likes;');
-
     // links_tagsテーブルを削除する
     db.exec('DROP TABLE IF EXISTS links_tags;');
-
     // tagsテーブルを削除する
     db.exec('DROP TABLE IF EXISTS tags;');
-
     // commentsテーブルを削除する
     db.exec('DROP TABLE IF EXISTS comments;');
-
     // comment_repliesテーブルを削除する
     db.exec('DROP TABLE IF EXISTS comment_replies;');
 
+    console.log('db_close done');
+}
+
+function db_close2(DB) {
+    try {
+    console.log('db_close start');
+
+    // DB.nameがduct_test.sqlite3ではない場合は終了する
+    const CHECK_DB_RES = DB.name === './duct_test.sqlite3' ? 'OK' : 'ERROR';
+    console.log('CHECK_DB_RES', CHECK_DB_RES);
+    if(CHECK_DB_RES === 'ERROR') {
+        console.log(CHECK_DB_RES);
+        (()=>{throw new Error('test dbでは無い')})()
+    }
+    const { exec } = require('child_process');
+
+    const command = 'sqlite3 ./duct_test.sqlite3 < ./drop_all_table.sql';
+
+    exec(command, (error, stdout, stderr) => {
+    if (error) {
+        console.error(`exec error: ${error}`);
+        return;
+    }
+    console.log(`stdout: ${stdout}`);
+    console.error(`stderr: ${stderr}`);
+
+    console.log('db_close done');
+    });
+    } catch (error) {
+        console.log('db_close error');
+        console.log(error);
+    }
 }
 
 const R = require('ramda');
@@ -520,6 +581,7 @@ app.use(bodyParser.json());
 const cors = require('cors');
 app.use(cors());
 const port = 8000;
+app.listen(port, "0.0.0.0", () => console.log(`App listening!! at http://localhost:${port}`) );
 
 const now = () => new Date().toISOString();
 // expressの一般的なエラーのレスポンス。引数としてエラー文字列を含めて呼び出す。statusコードも含めて返す
@@ -540,6 +602,12 @@ try {
             const FILE_NAME = './.data/TEST_MODE_for_overwriting_id_password.csv';
             const fs = require('fs');
             const line = fs.readFileSync(FILE_NAME, 'utf8').split(',');
+            console.log(
+                'REQ.body.name,', REQ.body.name,
+                'line[0],', line[0],
+                'REQ.body.password,', REQ.body.password,
+                'line[2],', line[2]
+            )
             const result = REQ.body.name === line[0] && REQ.body.password === line[2] ? 'OK' : 'ERROR';
             if (result === 'ERROR') {
                 return 'ERROR';
@@ -550,14 +618,33 @@ try {
                 (()=>{throw new Error('無効な認証(overwrite_password)')})()
             }
         };
+
+        console.log(req.body.test_mode);
+        console.log(overwrite_password_FOR_TEST(req));
+        
+
+
     const test_can = (overwrite_password_FOR_TEST(req) === 'OK' && req.body.test_mode === 'TEST_MODE')
         ? 'OK'
         : (()=>{throw new Error('権限がありません')})();
     // test_mode() === trueかつNAMEとPASSWORDが一致し、test_modeがTEST_MODEである時にduct_test.sqlite3を初期化する
-    (test_mode() === true && test_can === 'OK') ? db_init(db) : (()=>{throw new Error('何かのエラー')})();
-    req.body.test_mode_close === undefined ? null :
-        req.body.test_mode_close === 'TEST_MODE_CLOSE' ? db_close(db) : null;
-    res.status(200).json({message: 'OK'});
+    console.log(test_can);
+
+    console.log(test_mode() === true && test_can === 'OK' ? 'OK' : 'ERROR');
+
+    console.log(db);
+    const hogehoge = (test_mode() === true && test_can === 'OK') ? 'hogehoge OK' : 'hogehoge ERROR';
+    console.log(hogehoge);
+    // (test_mode() === true && test_can === 'OK') ? db_init(db) : (()=>{throw new Error('何かのエラー')})();
+    // hogehoge ? db_init(db) : (()=>{throw new Error('何かのエラー')})();
+    hogehoge ? db_init2(db) : (()=>{throw new Error('何かのエラー')})();
+    const fugafuga = req.body.test_mode_close === undefined ? 'req.body.test_mode_close is undefined' : 'req.body.test_mode_close is defined';
+    console.log(fugafuga);
+    // req.body.test_mode_close === undefined ? null :
+        // req.body.test_mode_close === 'TEST_MODE_CLOSE' ? db_close(db) : null;
+        req.body.test_mode_close === 'TEST_MODE_CLOSE' ? db_close2(db) : null;
+    // res.status(200).json({message: 'OK'});
+    res.status(200).json({result: 'success insert tag'});
 } catch (error) {
     res.status(400).json({result: 'fail', error: error.message});
 }
