@@ -1,9 +1,6 @@
 // const test_mode = () => true;
 const test_mode = () => false;
 
-// test_modeをexportする
-// module.exports.test_mode = test_mode;
-
 
 // package.json for glitch.com
 
@@ -32,158 +29,80 @@ const test_mode = () => false;
 //   }
 
 
-// -- sqlite3で全てのテーブルとそのデータを削除するクエリ
-// DROP TABLE IF EXISTS user_permission;
-// DROP TABLE IF EXISTS users;
-// DROP TABLE IF EXISTS links;
-// DROP TABLE IF EXISTS likes;
-// DROP TABLE IF EXISTS links_tags;
-// DROP TABLE IF EXISTS tags;
-// DROP TABLE IF EXISTS comments;
-// DROP TABLE IF EXISTS comment_replies;
+function db_init2(DB) {
+    try {
+    console.log('db_init start');
 
-// -- ja: データ制限量
-// -- en: Data limit
+    // DB.nameがduct_test.sqlite3ではない場合は終了する
+    const CHECK_DB_RES = DB.name === './duct_test.sqlite3' ? 'OK' : 'ERROR';
+    console.log('CHECK_DB_RES', CHECK_DB_RES);
+    if(CHECK_DB_RES === 'ERROR') {
+        console.log(CHECK_DB_RES);
+        (()=>{throw new Error('test dbでは無い')})()
+    }
+    const { exec } = require('child_process');
 
-// -- ユーザーの権限のテーブル。カラムはIDはと名前と作成日と更新日を持つ。IDは自動的に増加する
-// -- カラムの中には、一般ユーザー、ゲストユーザーがある
-// -- ゲストユーザーはreadだけできる。一般ユーザーはread,write,deleteができる
-// CREATE TABLE user_permission (
-//   id INTEGER PRIMARY KEY,
+    // const command = 'sqlite3 ./duct_test.sqlite3 < ./init.sql';
+    const command = 'sqlite3 ' + DB.name +  ' < ./init.sql';
 
-//   permission TEXT NOT NULL,
-//   readable INTEGER NOT NULL,
-//   writable INTEGER NOT NULL,
-//   deletable INTEGER NOT NULL, 
-//   likable INTEGER NOT NULL,
-//   commentable INTEGER NOT NULL,
-//   data_limit INTEGER NOT NULL,
+    exec(command, (error, stdout, stderr) => {
+    if (error) {
+        console.error(`exec error: ${error}`);
+        return;
+    }
+    console.log(`stdout: ${stdout}`);
+    console.error(`stderr: ${stderr}`);
 
-//   created_at DATETIME NOT NULL,
-//   updated_at DATETIME NOT NULL
-// );
+    console.log('db_init done');
+    });
+    } catch (error) {
+        console.log('db_init error');
+        console.log(error);
+    }
+}
 
-// -- ユーザーのテーブル。カラムはIDはと名前とパスワードと作成日と更新日を持つ。IDは自動的に増加する
-// CREATE TABLE users (
-//   id INTEGER PRIMARY KEY AUTOINCREMENT,
-//   user_permission_id INTEGER NOT NULL,
-//   username TEXT NOT NULL,
-//   userpassword TEXT NOT NULL,
-//   created_at DATETIME NOT NULL,
-//   updated_at DATETIME NOT NULL,
-//   FOREIGN KEY (user_permission_id) REFERENCES user_permission(id)
-// );
+function db_close2(DB) {
+    try {
+    console.log('db_close start');
 
-// -- linksというブログのようなサービスのテーブル。IDは自動的に増加する。userのIDを外部キーとして持つ
-// CREATE TABLE links (
-//   id INTEGER PRIMARY KEY AUTOINCREMENT,
-//   link TEXT NOT NULL,
-//   user_id INTEGER NOT NULL,
-//   created_at DATETIME NOT NULL,
-//   updated_at DATETIME NOT NULL,
-//   FOREIGN KEY (user_id) REFERENCES users(id)
-// );
+    // DB.nameがduct_test.sqlite3ではない場合は終了する
+    const CHECK_DB_RES = DB.name === './duct_test.sqlite3' ? 'OK' : 'ERROR';
+    console.log('CHECK_DB_RES', CHECK_DB_RES);
+    if(CHECK_DB_RES === 'ERROR') {
+        console.log(CHECK_DB_RES);
+        (()=>{throw new Error('test dbでは無い')})()
+    }
+    const { exec } = require('child_process');
 
+    const command = 'sqlite3 ' + DB.name +  ' < ./drop_all_table.sql';
 
-// -- likesというブログの高評価ボタンのようなサービスのテーブル。IDは自動的に増加する。linkのIDを外部キーとして持つ
-// CREATE TABLE likes (
-//   id INTEGER PRIMARY KEY AUTOINCREMENT,
-//   link_id INTEGER NOT NULL,
-//   user_id INTEGER NOT NULL,
-//   created_at DATETIME NOT NULL,
-//   updated_at DATETIME NOT NULL,
-//   FOREIGN KEY (link_id) REFERENCES link(id)
-// );
+    exec(command, (error, stdout, stderr) => {
+    if (error) {
+        console.error(`exec error: ${error}`);
+        return;
+    }
+    console.log(`stdout: ${stdout}`);
+    console.error(`stderr: ${stderr}`);
 
-// -- linksとtagsの中間テーブル
-// CREATE TABLE links_tags (
-//   id INTEGER PRIMARY KEY AUTOINCREMENT,
-//   link_id INTEGER NOT NULL,
-//   tag_id INTEGER NOT NULL,
-//   created_at DATETIME NOT NULL,
-//   updated_at DATETIME NOT NULL
-// );
+    console.log('db_close done');
+    });
+    } catch (error) {
+        console.log('db_close error');
+        console.log(error);
+    }
+}
 
-// -- tagsというブログのタグのようなサービスのテーブル。IDは自動的に増加する。links_tagsを外部キーとして持つ
-// CREATE TABLE tags (
-//   id INTEGER PRIMARY KEY AUTOINCREMENT,
-//   tag TEXT NOT NULL
-// );
-
-// CREATE TABLE comments (
-//   id INTEGER PRIMARY KEY AUTOINCREMENT,
-//   link_id INTEGER NOT NULL,
-//   user_id INTEGER NOT NULL,
-//   comment TEXT NOT NULL,
-//   created_at DATETIME NOT NULL,
-//   updated_at DATETIME NOT NULL,
-//   FOREIGN KEY (link_id) REFERENCES link(id)
-// );
-
-// CREATE TABLE comment_replies (
-//   id INTEGER PRIMARY KEY AUTOINCREMENT,
-//   comment_id INTEGER NOT NULL,
-//   user_id INTEGER NOT NULL,
-//   reply TEXT NOT NULL,
-//   created_at DATETIME NOT NULL,
-//   updated_at DATETIME NOT NULL,
-//   FOREIGN KEY (comment_id) REFERENCES comments(id)
-// );
-
-
-
-// -- user_permissionにレコード挿入する
-// INSERT INTO user_permission (id, permission,
-// readable,
-// writable,
-// deletable,
-// likable,
-// commentable,
-// data_limit,
-// created_at, updated_at) VALUES (1, 'guest', 1, 0, 0, 0, 0,
-// 200,
-// DATETIME('now'), DATETIME('now'));
-// INSERT INTO user_permission (id, permission,
-// readable,
-// writable,
-// deletable,
-// likable,
-// commentable,
-// data_limit,
-// created_at, updated_at) VALUES (2, 'user', 1, 1, 1, 1, 1,
-// 40000,
-// DATETIME('now'), DATETIME('now'));
-
-// INSERT INTO user_permission (id, permission,
-// readable,
-// writable,
-// deletable,
-// likable,
-// commentable,
-// data_limit,
-// created_at, updated_at) VALUES (3, 'pro', 1, 1, 1, 1, 1,
-// 400000,
-// DATETIME('now'), DATETIME('now'));
-
-
-// -- usersにデータをレコード挿入する
-// INSERT INTO users (user_permission_id, username, userpassword, created_at, updated_at) VALUES (1, 'GUEST', 'GUEST_PASS', DATETIME('now'), DATETIME('now'));
-// INSERT INTO users (user_permission_id, username, userpassword, created_at, updated_at) VALUES (2, 'user1', 'user_pass1', DATETIME('now'), DATETIME('now'));
-// INSERT INTO users (user_permission_id, username, userpassword, created_at, updated_at) VALUES (2, 'user2', 'user_pass2', DATETIME('now'), DATETIME('now'));
-// INSERT INTO users (user_permission_id, username, userpassword, created_at, updated_at) VALUES (3, 'pro1', 'pro_pass1', DATETIME('now'), DATETIME('now'));
-
-
-const R = require('ramda');
+// const R = require('ramda');
 const validator = require('validator');
 const express = require('express');
 const sqlite = require('better-sqlite3');
 
 
-// test_modeがtrueの時は、テスト用のDBの:memoryを使う。falseの時はduct.sqlite3を使う
-const db = test_mode() === true ? sqlite(':memory:') : new sqlite('./duct.sqlite3');
+// test_modeがtrueの時は、テスト用のDBのduct_test.sqlite3を使う。falseの時はduct.sqlite3を使う
+const db = test_mode() === true ? new sqlite('./duct_test.sqlite3') : new sqlite('./duct.sqlite3');
+
+
 // dbをexportする
-module.exports = db;
-// let db = sqlite3(':memory:');
 // const db = new sqlite('./duct.sqlite3');
 
 
@@ -193,17 +112,70 @@ app.use(bodyParser.json());
 const cors = require('cors');
 app.use(cors());
 const port = 8000;
-if(test_mode() === false){
-    app.listen(port, "0.0.0.0", () => console.log(`App listening!! at http://localhost:${port}`) );
-}
-// app.listen(port, "0.0.0.0", () => console.log(`App listening!! at http://localhost:${port}`) );
-// app.listen(port, () => console.log(`App listening!! at http://localhost:${port}`) );
+app.listen(port, "0.0.0.0", () => console.log(`App listening!! at http://localhost:${port}`) );
 
 const now = () => new Date().toISOString();
 // expressの一般的なエラーのレスポンス。引数としてエラー文字列を含めて呼び出す。statusコードも含めて返す
 const error_response = (res, status_code, error_message) => res.status(status_code).json({error: error_message});
 
 
+// test_mode() === trueかつNAMEとPASSWORDが一致し、test_modeがTEST_MODEである時にduct_test.sqlite3を初期化する
+app.post('/test_db_init', (req, res) => {
+try {
+    req.body.test_mode === 'TEST_MODE' ? null : (()=>{throw new Error('test_modeがTEST_MODEでは無い')})();
+    // overwrite_password関数はID/PASSWORDの秘匿化のための応急処置として使用する
+    // ローカル環境でも.dataという隠しフォルダを使うことで、秘匿化を実現する
+    // glitch.comにおいてpravateな情報を扱う場合は、.dataフォルダに格納する
+    // REQ.body.nameがlines[0]と一致し、
+    // REQ.body.passwordがlines[2]と一致する場合に'OK'を返す
+    const overwrite_password_FOR_TEST = (REQ) => {
+        try {
+        const FILE_NAME = './.data/TEST_MODE_for_overwriting_id_password.csv';
+        const fs = require('fs');
+        const line = fs.readFileSync(FILE_NAME, 'utf8').split(',');
+        console.log(
+            'REQ.body.name,', REQ.body.name,
+            'line[0],', line[0],
+            'REQ.body.password,', REQ.body.password,
+            'line[2],', line[2]
+        )
+        const result = REQ.body.name === line[0] && REQ.body.password === line[2] ? 'OK' : 'ERROR';
+        if (result === 'ERROR') {
+            return 'ERROR';
+        };
+        // return [REQ.body.name, result];
+        return 'OK';
+        } catch (error) {
+            (()=>{throw new Error('無効な認証(overwrite_password)')})()
+        }
+    };
+    // console.log(req.body.test_mode);
+    // console.log(overwrite_password_FOR_TEST(req));
+    const test_can = (overwrite_password_FOR_TEST(req) === 'OK' && req.body.test_mode === 'TEST_MODE')
+        ? 'OK'
+        : (()=>{throw new Error('権限がありません')})();
+    // test_mode() === trueかつNAMEとPASSWORDが一致し、test_modeがTEST_MODEである時にduct_test.sqlite3を初期化する
+    // console.log(test_can);
+
+    // console.log(test_mode() === true && test_can === 'OK' ? 'OK' : 'ERROR');
+
+    // console.log(db);
+    // const hogehoge = (test_mode() === true && test_can === 'OK') ? 'hogehoge OK' : 'hogehoge ERROR';
+    // console.log(hogehoge);
+    // (test_mode() === true && test_can === 'OK') ? db_init(db) : (()=>{throw new Error('何かのエラー')})();
+    // hogehoge ? db_init(db) : (()=>{throw new Error('何かのエラー')})();
+    (test_mode() === true && test_can === 'OK') ? db_init2(db) : (()=>{throw new Error('何かのエラー')})();
+    // const fugafuga = req.body.test_mode_close === undefined ? 'req.body.test_mode_close is undefined' : 'req.body.test_mode_close is defined';
+    // console.log(fugafuga);
+    // req.body.test_mode_close === undefined ? null :
+        // req.body.test_mode_close === 'TEST_MODE_CLOSE' ? db_close(db) : null;
+    (req.body.test_mode_close !== undefined && req.body.test_mode_close) === 'TEST_MODE_CLOSE' ? db_close2(db) : null;
+    // res.status(200).json({message: 'OK'});
+    res.status(200).json({result: 'success init or drop all table in test db'});
+} catch (error) {
+    res.status(400).json({result: 'fail', error: error.message});
+}
+});
 
 
 
@@ -224,7 +196,7 @@ const get_user_with_permission = (REQ) => {
         const FILE_NAME = './.data/for_overwriting_id_password.csv';
         // csvファイルを読み込んで','でsplitしてconsole.logする
         const fs = require('fs');
-        const line = fs.readFileSync(FILE_NAME, 'utf8').split(',');    
+        const line = fs.readFileSync(FILE_NAME, 'utf8').split(',');
         const result = REQ.body.name === line[0] && REQ.body.password === line[2] ? line[1] : REQ.body.password;
         return [REQ.body.name, result];
         } catch (error) {
@@ -316,6 +288,7 @@ app.post('/test', (req, res) => {
 app.get('/read_all', (req, res) => {
     try {
     const read_query = (req) => {
+        
         try {
             // req.bodyに ASC,DESC,TAG,USERがある場合は、それぞれの条件に合わせてSQL文を変更する関数
             const REQ_TAG = req.query.tag ? req.query.tag : null;
@@ -385,7 +358,7 @@ ORDER_BY_COLUMN
 console.log(QUERY_WITH_PARAM_OBJ);
             return QUERY_WITH_PARAM_OBJ;
         } catch (error) {
-            res.status(400).json({result: 'fail', error: error.message});
+            (()=>{throw new Error(error.message)})();
         }
     };
 
@@ -454,7 +427,9 @@ console.log(QUERY_WITH_PARAM_OBJ);
               };
             });
         
-            // res.json(pre_result);
+        // res.json(QUERY_WITH_PARAM_OBJ);
+        // res.json('test');
+        // res.json(pre_result);
         res.json(result);
 
     } catch (error) {
@@ -464,147 +439,7 @@ console.log(QUERY_WITH_PARAM_OBJ);
 });
   
 
-// // linkテーブル以下のデータを取得する
-// app.get('/read_all', (req, res) => {
-//   try {
-//     // req.query.tagがある場合cross tableでtagsテーブルを結合する
-//     tag_join_option = req.query.tag ? ' LEFT JOIN links_tags ON links.id = links_tags.link_id LEFT JOIN tags ON links_tags.tag_id = tags.id' : '';
-//     const STANDARD_READ_QUERY = `
-//     SELECT
-//     links.id AS id, links.link AS link, links.created_at AS created_at, links.updated_at AS updated_at,
-//     users.id AS user_id, users.username AS username,
-//     (SELECT COUNT(*) FROM likes WHERE likes.link_id = links.id) AS like_count
-//     FROM links
-//     LEFT JOIN users ON links.user_id = users.id
-//     LEFT JOIN likes ON links.id = likes.link_id`
-//     + tag_join_option
-//     ;
-//     // req.bodyに ASC,DESC,TAG,USERがある場合は、それぞれの条件に合わせてSQL文を変更する関数
-//     const read_query = (req) => {
-//         try {
-//         const REQ_TAG = req.query.tag ? req.query.tag : null;
-//         // REQ_TAGがtagsテーブルに存在しない場合は、エラーを返す
-//         // db.prepare(`SELECT * FROM tags WHERE tag = ?`).get(REQ_TAG) === undefined ? (()=>{throw new Error('そんなタグねえよ')})() : null;
-//         const USER = req.query.user ? req.query.user : null;
-//         // req.query.userがSQLとして不正な場合は、エラーを返す
-//         USER
-//             ? db.prepare(`SELECT * FROM users WHERE username = ?`).get(USER) === undefined
-//             ? (()=>{throw new Error('不正なクエリ')})() : null : null;
 
-//         // req.query.tagがある場合は、WHERE_TAGをWHERE句に、
-//         // req.query.userがある場合は、WHERE_USERをWHERE句に、
-//         // 両方ある場合は、WHERE_TAG_AND_USERをWHERE句に、
-//         // どれもない場合は、nullを返しQUERYにWHERE句が入らない
-//         const WHERE_TAG_AND_USER = REQ_TAG && USER ? `WHERE tags.tag = '${REQ_TAG}' AND users.username = '${USER}'` : null;
-//         const WHERE_TAG = REQ_TAG ? `WHERE tags.tag = '${REQ_TAG}'` : null;
-//         const WHERE_USER = USER ? `WHERE users.username = '${USER}'` : null;
-//         const WHERE = WHERE_TAG_AND_USER || WHERE_TAG || WHERE_USER || null;
-                    
-//         const ORDER_BY = req.query.order_by ? req.query.order_by : 'DESC';
-//         const ORDER_BY_COLUMN = req.query.order_by_column ? req.query.order_by_column : 'links.id';
-//         // クエリを生成する。WHEREがある場合は、WHERE + ORDER BYを、ない場合は、ORDER_BYだけを返す
-//         const QUERY = WHERE ? `${STANDARD_READ_QUERY} ${WHERE} ORDER BY ${ORDER_BY_COLUMN} ${ORDER_BY}` : 
-//             `${STANDARD_READ_QUERY} ORDER BY ${ORDER_BY_COLUMN} ${ORDER_BY}`
-//             ;
-//             return QUERY;
-//         } catch (error) {
-//             console.log(error.message);
-//         }
-//     };
-
-//         const pre_result = db.prepare(read_query(req)).all();
-
-
-//     const result = pre_result.map(parent => {
-//       const tags = db.prepare(`
-//         SELECT
-//         tags.id AS id, tags.tag AS tag
-//         FROM tags
-//         LEFT JOIN links_tags ON tags.id = links_tags.tag_id
-//         WHERE links_tags.link_id = ?
-//       `).all(parent.id);
-
-//       const comments = db.prepare(`
-//         SELECT
-//         comments.id AS id, comments.comment AS comment, comments.created_at AS created_at, comments.updated_at AS updated_at,
-//         users.id AS user_id, users.username AS username
-//         FROM comments
-//         LEFT JOIN links ON comments.link_id = links.id
-//         LEFT JOIN users ON comments.user_id = users.id
-//         WHERE links.id = ?
-//       `).all(parent.id);
-
-//         const comments_and_replies = (comments ? comments : []).map(comment => {
-//             const comment_replies = db.prepare(`
-//             SELECT
-//             comment_replies.id AS id, comment_replies.reply AS reply, comment_replies.created_at AS created_at, comment_replies.updated_at AS updated_at,
-//             users.id AS user_id, users.username AS username
-//             FROM comment_replies
-//             LEFT JOIN comments ON comment_replies.comment_id = comments.id
-//             LEFT JOIN users ON comment_replies.user_id = users.id
-//             WHERE comments.id = ?
-//             `).all(comment.id);
-//             return {
-//                 ...comments,
-//                 comment_replies,
-//             }
-//         });
-
-//       return {
-//         ...parent,
-//         tags,
-//         comments_and_replies,
-//       };
-//     });
-
-//     // res.json(pre_result);
-//     res.json(result);
-//     // console.log(result);
-//   } catch (error) {
-//     console.log(error);
-//     res.status(400).json({result: 'fail', error: error.message});
-//   }
-// });
-
-// // linkにデータをレコード挿入するエンドポイント
-// app.post('/insert_link', (req, res) => {
-//     try {
-//         const WHITE_LIST_URL_ARRAY = [
-//             'https://www.yahoo.co.jp/',
-//             'https://www.google.co.jp/',
-//             'https://www.youtube.com/',
-//         ];
-//         // URLの配列の文字列から始まる場合はtrueを返す関数を1行で
-//         const is_include_WHITE_LIST_URL = (target_url_str, WHITE_LIST_URL_ARRAY) => WHITE_LIST_URL_ARRAY.some((WHITE_LIST_URL) => target_url_str.startsWith(WHITE_LIST_URL));
-//         const error_check = (tag) => {
-//             const reserved_words = ['SELECT', 'FROM', 'WHERE', 'INSERT', 'DELETE', 'UPDATE', 'DROP', 'ALTER', 'CREATE', 'TABLE', 'INTO', 'VALUES', 'AND', 'OR', 'NOT', 'NULL', 'TRUE', 'FALSE'];
-//             switch (true) {
-//                 case link === undefined: return {res: 'linkが空です', status: false};
-//                 case !link.match(/^(https?|ftp)(:\/\/[-_.!~*\'()a-zA-Z0-9;\/?:\@&=+\$,%#]+)$/): return {res: 'URLの形式が正しくありません', status: false}; // URLの正規表現
-//                 case !is_include_WHITE_LIST_URL(link, WHITE_LIST_URL_ARRAY): return {res: '許可されていないURLです', status: false};
-//                 case link.length > 300: return {res: '300文字以上はエラー', status: false};
-//                 case reserved_words.includes(link): return {res: 'SQLの予約語を含む場合はエラー', status: false};
-//                 default: return {res: 'OK', status: true};
-//             }
-//         }
-//         const error_check_result = error_check(req.body.link);
-//         error_check_result.status ? null : (()=>{throw new Error(error_check_result.res)})();
-
-//         const user = get_user_with_permission(req);
-//         user || user.writable ? null : (()=>{throw new Error('権限がありません')})();
-//         // 同じlinkが存在するなら、エラーを返す
-//         const link_exists = db.prepare(`SELECT * FROM links WHERE link = ?`).get(req.body.link);
-//         link_exists ? (()=>{throw new Error('同じlinkが存在します')})() : null;
-
-//         const result = db.prepare(`
-//         INSERT INTO links (user_id, link, created_at, updated_at) VALUES (?, ?, ?, ?)
-//         `).run(user.user_id, req.body.link, now(), now());
-//         res.json(result);
-//     } catch (error) {
-//         console.log(error);
-//         error_response(res, '原因不明のエラー' + error);
-//     }
-// });
 
 // linkのデータを削除する
 app.post('/delete_link', (req, res) => {
@@ -642,7 +477,7 @@ app.post('/like_increment_or_decrement', (req, res) => {
             const link_exists = db.prepare(`SELECT * FROM links WHERE id = ?`).get(link_id);
             return !user_exists ?  (()=>{throw new Error('no existing user_id should return 400')})() :
                     !link_exists ? (()=>{throw new Error('no existing link_id should return 400')})() :
-                    undefined;
+                    null;
         };
         error_check(req.body.user_id, req.body.link_id);
 
@@ -1014,22 +849,35 @@ app.post('/delete_comment_reply', (req, res) => {
 
 const error_check_for_insert_link = (link) => {
     const WHITE_LIST_URL_ARRAY = [
+        'https://yanaka.dev/',
         'https://www.yahoo.co.jp/',
         'https://www.google.co.jp/',
         'https://www.youtube.com/',
     ];    
     const reserved_words = ['SELECT', 'FROM', 'WHERE', 'INSERT', 'DELETE', 'UPDATE', 'DROP', 'ALTER', 'CREATE', 'TABLE', 'INTO', 'VALUES', 'AND', 'OR', 'NOT', 'NULL', 'TRUE', 'FALSE'];
+    const is_url = (url) => (/^(https?):\/\/[^\s/$.?#].[^\s]*$/i).test(url);
     const is_include_WHITE_LIST_URL = (target_url_str) => WHITE_LIST_URL_ARRAY.some((WHITE_LIST_URL) => target_url_str.startsWith(WHITE_LIST_URL));
+
+    !is_url(link) ? console.log('URLの形式が正しくありません') : null;
+    console.log('link is' + link + '!!');
+
     switch (true) {
-        case link === undefined: return 'linkが空です'; break;
-        case reserved_words.includes(link): return 'SQLの予約語を含む場合はエラー'; break;
-        // URLが2000文字より大きい時はエラー
-        case link.length > 2000: return 'URLが長すぎます'; break;
-        // リンクが正しいURLの形式でないときに400 Bad Requestを返す。validator.jsを使ってチェックする break;
-        case !validator.isURL(link): return 'URLの形式が正しくありません'; break;
-        case !is_include_WHITE_LIST_URL(link): return '許可されていないURLです'; break;
-        default: return 'OK'; break;
+    case link === undefined:
+        return 'linkが空です';
+    case reserved_words.includes(link):
+        return 'SQLの予約語を含む場合はエラー';
+    case link.length > 2000:
+        return 'URLが長すぎます';
+    case !is_url(link):
+        return 'URLの形式が正しくありません';
+    case !is_include_WHITE_LIST_URL(link):
+        return '許可されていないURLです';
+    default:
+        return 'OK';
     }
+    // !is_url(link) ? (()=>{throw new Error('URLの形式が正しくありません')})() : null;
+    // console.log('link is' + link + '!!');
+    // return !is_url(link) ? 'URLの形式が正しくありません' : null;
 };
 // linkにデータをレコード挿入するエンドポイント
 // 正しいリンクが挿入されたときに200を返しresultをjsonで返す
@@ -1072,26 +920,3 @@ app.post('/insert_link', (req, res) => {
 });
 
 
-if(test_mode() === true){
-    // test.jsのためにexportする
-    module.exports = app;
-    // test.jsのためにdbをexportする
-    module.exports.db = db;
-
-    module.exports.test_mode = test_mode;
-    // test.jsのためにget_user_with_permissionをexportする
-    module.exports.get_user_with_permission = get_user_with_permission;
-    // test.jsのためにerror_check_for_insert_linkをexportする
-    module.exports.error_check_for_insert_link = error_check_for_insert_link;
-    // test.jsのためにerror_check_for_insert_tagをexportする
-    module.exports.error_check_for_insert_tag = error_check_for_insert_tag;
-    // get_tag_id_by_tag_name_for_insert_tag
-    module.exports.get_tag_id_by_tag_name_for_insert_tag = get_tag_id_by_tag_name_for_insert_tag
-    // insert_tag_for_insert_tag
-    module.exports.insert_tag_for_insert_tag = insert_tag_for_insert_tag;
-    // make_tag_and_insert_tag_for_insert_tag
-    module.exports.make_tag_and_insert_tag_for_insert_tag = make_tag_and_insert_tag_for_insert_tag;
-} else {
-    module.exports.test_mode = test_mode;
-    // app.listen(port, "0.0.0.0", () => console.log(`App listening!! at http://localhost:${port}`) );
-}

@@ -1,5 +1,5 @@
-const test_mode = () => true;
-// const test_mode = () => false;
+// const test_mode = () => true;
+const test_mode = () => false;
 
 
 // package.json for glitch.com
@@ -92,7 +92,7 @@ function db_close2(DB) {
     }
 }
 
-const R = require('ramda');
+// const R = require('ramda');
 const validator = require('validator');
 const express = require('express');
 const sqlite = require('better-sqlite3');
@@ -155,26 +155,15 @@ try {
         ? 'OK'
         : (()=>{throw new Error('権限がありません')})();
     // test_mode() === trueかつNAMEとPASSWORDが一致し、test_modeがTEST_MODEである時にduct_test.sqlite3を初期化する
-    // console.log(test_can);
-
-    // console.log(test_mode() === true && test_can === 'OK' ? 'OK' : 'ERROR');
-
-    // console.log(db);
-    // const hogehoge = (test_mode() === true && test_can === 'OK') ? 'hogehoge OK' : 'hogehoge ERROR';
-    // console.log(hogehoge);
-    // (test_mode() === true && test_can === 'OK') ? db_init(db) : (()=>{throw new Error('何かのエラー')})();
-    // hogehoge ? db_init(db) : (()=>{throw new Error('何かのエラー')})();
     (test_mode() === true && test_can === 'OK') ? db_init2(db) : (()=>{throw new Error('何かのエラー')})();
-    // const fugafuga = req.body.test_mode_close === undefined ? 'req.body.test_mode_close is undefined' : 'req.body.test_mode_close is defined';
-    // console.log(fugafuga);
-    // req.body.test_mode_close === undefined ? null :
-        // req.body.test_mode_close === 'TEST_MODE_CLOSE' ? db_close(db) : null;
     (req.body.test_mode_close !== undefined && req.body.test_mode_close) === 'TEST_MODE_CLOSE' ? db_close2(db) : null;
-    // res.status(200).json({message: 'OK'});
-    res.status(200).json({result: 'success init or drop all table in test db'});
-} catch (error) {
-    res.status(400).json({result: 'fail', error: error.message});
-}
+    res.status(200)
+        .json({result: 'success'
+            // ,message: 'test_db_init done'
+        });
+    } catch (error) {
+        res.status(400).json({result: 'fail', message: error.message});
+    }
 });
 
 
@@ -254,36 +243,17 @@ const get_user_with_permission = (REQ) => {
          : (()=>{throw new Error('無効な認証')})();
     } catch (error) {
         console.log(error.message);
-        res.status(400).json({result: 'fail', error: error.message});
+        res.status(400).json({result: 'fail', message: error.message});
     }
 };
+
+
 
 
 app.get('/', (req, res) => {
     console.log('Hello World, this is the TEST mode!!!!');
     res.json({message: 'Hello World, this is the TEST mode!!!!'});
 });
-
-app.post('/test', (req, res) => {
-    console.log('Hello World, this is the TEST mode!!!!');
-    res.json({message: 'Hello World, this is the TEST mode!!!!'});
-});
-
-
-// app.get('/proof_the_at_placeholder_is_NG_for_DESC_or_ASC', (req, res) => {
-//   const order_by = req.query.order_by || 'id';
-//   const order = req.query.order || 'DESC';
-// //   const stmt = db.prepare(`SELECT * FROM links ORDER BY ${order_by} ${order}`);
-//   const stmt = db.prepare(`SELECT * FROM links ORDER BY @order_by @ABC`);
-// //   const stmt = db.prepare(`SELECT * FROM links ORDER BY @order_by DESC`);
-//   const links = stmt.all(
-//     {
-//         order_by: 'id',
-//         ABC: 'DESC'
-//     }
-//     );
-//   console.log(links);
-// });
 
 app.get('/read_all', (req, res) => {
     try {
@@ -307,18 +277,6 @@ app.get('/read_all', (req, res) => {
 
             const ORDER_BY = req.query.order_by === 'ASC' ? 'ASC' : 'DESC';
             const ORDER_BY_COLUMN = req.query.order_by_column ? req.query.order_by_column : 'links.id';
-
-console.log(
-REQ_TAG,
-USER,
-WHERE_TAG_AND_USER,
-WHERE_TAG,
-WHERE_USER,
-WHERE,
-ORDER_BY,
-ORDER_BY_COLUMN
-)
-
             // req.query.tagがある場合cross tableでtagsテーブルを結合する
             const tag_join_option = req.query.tag ? ' LEFT JOIN links_tags ON links.id = links_tags.link_id LEFT JOIN tags ON links_tags.tag_id = tags.id' : '';
 
@@ -354,10 +312,9 @@ ORDER_BY_COLUMN
             const QUERY_WITH_PARAM_OBJ = WHERE
                 ? {query_type: 1, query: STANDARD_READ_QUERY_1, order_by_column: ORDER_BY_COLUMN, tag: REQ_TAG, user: USER}
                 : {query_type: 2, query: STANDARD_READ_QUERY_2, order_by_column: ORDER_BY_COLUMN};
-console.log(QUERY_WITH_PARAM_OBJ);
             return QUERY_WITH_PARAM_OBJ;
         } catch (error) {
-            res.status(400).json({result: 'fail', error: error.message});
+            (()=>{throw new Error(error.message)})();
         }
     };
 
@@ -426,117 +383,20 @@ console.log(QUERY_WITH_PARAM_OBJ);
               };
             });
         
-            // res.json(pre_result);
-        res.json(result);
-
+        // res.json(QUERY_WITH_PARAM_OBJ);
+        // res.json('test');
+        // res.json(pre_result);
+    res.status(200)
+        .json({result: 'success'
+            ,message: response.lastInsertRowid
+        });
     } catch (error) {
-        console.log(error);
-        res.status(400).json({result: 'fail', error: error.message});
+        console.log(error.message);
+        res.status(400).json({result: 'fail', message: error.message});
     }
 });
   
 
-// // linkテーブル以下のデータを取得する
-// app.get('/read_all', (req, res) => {
-//   try {
-//     // req.query.tagがある場合cross tableでtagsテーブルを結合する
-//     tag_join_option = req.query.tag ? ' LEFT JOIN links_tags ON links.id = links_tags.link_id LEFT JOIN tags ON links_tags.tag_id = tags.id' : '';
-//     const STANDARD_READ_QUERY = `
-//     SELECT
-//     links.id AS id, links.link AS link, links.created_at AS created_at, links.updated_at AS updated_at,
-//     users.id AS user_id, users.username AS username,
-//     (SELECT COUNT(*) FROM likes WHERE likes.link_id = links.id) AS like_count
-//     FROM links
-//     LEFT JOIN users ON links.user_id = users.id
-//     LEFT JOIN likes ON links.id = likes.link_id`
-//     + tag_join_option
-//     ;
-//     // req.bodyに ASC,DESC,TAG,USERがある場合は、それぞれの条件に合わせてSQL文を変更する関数
-//     const read_query = (req) => {
-//         try {
-//         const REQ_TAG = req.query.tag ? req.query.tag : null;
-//         // REQ_TAGがtagsテーブルに存在しない場合は、エラーを返す
-//         // db.prepare(`SELECT * FROM tags WHERE tag = ?`).get(REQ_TAG) === undefined ? (()=>{throw new Error('そんなタグねえよ')})() : null;
-//         const USER = req.query.user ? req.query.user : null;
-//         // req.query.userがSQLとして不正な場合は、エラーを返す
-//         USER
-//             ? db.prepare(`SELECT * FROM users WHERE username = ?`).get(USER) === undefined
-//             ? (()=>{throw new Error('不正なクエリ')})() : null : null;
-
-//         // req.query.tagがある場合は、WHERE_TAGをWHERE句に、
-//         // req.query.userがある場合は、WHERE_USERをWHERE句に、
-//         // 両方ある場合は、WHERE_TAG_AND_USERをWHERE句に、
-//         // どれもない場合は、nullを返しQUERYにWHERE句が入らない
-//         const WHERE_TAG_AND_USER = REQ_TAG && USER ? `WHERE tags.tag = '${REQ_TAG}' AND users.username = '${USER}'` : null;
-//         const WHERE_TAG = REQ_TAG ? `WHERE tags.tag = '${REQ_TAG}'` : null;
-//         const WHERE_USER = USER ? `WHERE users.username = '${USER}'` : null;
-//         const WHERE = WHERE_TAG_AND_USER || WHERE_TAG || WHERE_USER || null;
-                    
-//         const ORDER_BY = req.query.order_by ? req.query.order_by : 'DESC';
-//         const ORDER_BY_COLUMN = req.query.order_by_column ? req.query.order_by_column : 'links.id';
-//         // クエリを生成する。WHEREがある場合は、WHERE + ORDER BYを、ない場合は、ORDER_BYだけを返す
-//         const QUERY = WHERE ? `${STANDARD_READ_QUERY} ${WHERE} ORDER BY ${ORDER_BY_COLUMN} ${ORDER_BY}` : 
-//             `${STANDARD_READ_QUERY} ORDER BY ${ORDER_BY_COLUMN} ${ORDER_BY}`
-//             ;
-//             return QUERY;
-//         } catch (error) {
-//             console.log(error.message);
-//         }
-//     };
-
-//         const pre_result = db.prepare(read_query(req)).all();
-
-
-//     const result = pre_result.map(parent => {
-//       const tags = db.prepare(`
-//         SELECT
-//         tags.id AS id, tags.tag AS tag
-//         FROM tags
-//         LEFT JOIN links_tags ON tags.id = links_tags.tag_id
-//         WHERE links_tags.link_id = ?
-//       `).all(parent.id);
-
-//       const comments = db.prepare(`
-//         SELECT
-//         comments.id AS id, comments.comment AS comment, comments.created_at AS created_at, comments.updated_at AS updated_at,
-//         users.id AS user_id, users.username AS username
-//         FROM comments
-//         LEFT JOIN links ON comments.link_id = links.id
-//         LEFT JOIN users ON comments.user_id = users.id
-//         WHERE links.id = ?
-//       `).all(parent.id);
-
-//         const comments_and_replies = (comments ? comments : []).map(comment => {
-//             const comment_replies = db.prepare(`
-//             SELECT
-//             comment_replies.id AS id, comment_replies.reply AS reply, comment_replies.created_at AS created_at, comment_replies.updated_at AS updated_at,
-//             users.id AS user_id, users.username AS username
-//             FROM comment_replies
-//             LEFT JOIN comments ON comment_replies.comment_id = comments.id
-//             LEFT JOIN users ON comment_replies.user_id = users.id
-//             WHERE comments.id = ?
-//             `).all(comment.id);
-//             return {
-//                 ...comments,
-//                 comment_replies,
-//             }
-//         });
-
-//       return {
-//         ...parent,
-//         tags,
-//         comments_and_replies,
-//       };
-//     });
-
-//     // res.json(pre_result);
-//     res.json(result);
-//     // console.log(result);
-//   } catch (error) {
-//     console.log(error);
-//     res.status(400).json({result: 'fail', error: error.message});
-//   }
-// });
 
 
 // linkのデータを削除する
@@ -557,10 +417,10 @@ app.post('/delete_link', (req, res) => {
         db.prepare(`SELECT * FROM links_tags WHERE link_id = ?`).all(req.body.id).length ? db.prepare(`DELETE FROM links_tags WHERE link_id = ?`).run(req.body.id) : null;
         // linkを削除する
         db.prepare(`SELECT * FROM links WHERE id = ? AND user_id = ?`).get(req.body.id, user.user_id) ? db.prepare(`DELETE FROM links WHERE id = ? AND user_id = ?`).run(req.body.id, user.user_id) : (()=>{throw new Error('削除するlinkが見つかりません')})();
-        res.json({result: 'ok'});
+        res.status(200).json({result: 'success'});
     } catch (error) {
         console.log(error);
-        res.status(400).json({result: 'fail', error: error.message});
+        res.status(400).json({result: 'fail', message: error.message});
     }
 });
 
@@ -575,20 +435,22 @@ app.post('/like_increment_or_decrement', (req, res) => {
             const link_exists = db.prepare(`SELECT * FROM links WHERE id = ?`).get(link_id);
             return !user_exists ?  (()=>{throw new Error('no existing user_id should return 400')})() :
                     !link_exists ? (()=>{throw new Error('no existing link_id should return 400')})() :
-                    undefined;
+                    null;
         };
         error_check(req.body.user_id, req.body.link_id);
 
         const like_exists = db.prepare(`SELECT * FROM likes WHERE user_id = ? AND link_id = ?`).get(user.user_id, req.body.link_id)
             ? true
             : (()=>{throw new Error('そんなlikeは無えよ')})();
-        const result = like_exists
+        const response = like_exists
             ? db.prepare(`DELETE FROM likes WHERE user_id = ? AND link_id = ?`).run(user.user_id, req.body.link_id)
             : db.prepare(`INSERT INTO likes (user_id, link_id, created_at, updated_at) VALUES (?, ?, ?, ?)`).run(user.user_id, req.body.link_id, now(), now());
-        res.json({message: 'success', result: result});
+        // res.status(200).json({message: 'success', result: result});
+        res.status(200).json({result: 'success', message: response});
     } catch (error) {
         console.log(error);
-        res.status(400).json({result: 'fail', error: error.message});
+        error: 
+        res.status(400).json({result: 'fail', message: error.message});
     }
 });
 
@@ -692,30 +554,23 @@ app.post('/insert_tag', (req, res) => {
                 (()=>{throw new Error('既に同じタグがついているか、何かの既存タグ追加エラー')})()
             }
         };
-console.log('error_check_result');
     const error_check_result = error_check_for_insert_tag(req.body.tag);
-// console.log('error_check_result_status');
     error_check_result === 'OK' ? null : (()=>{throw new Error(error_check_result)})();
-//  console.log('get_user_with_permission');
     const user = get_user_with_permission(req);
-    user || user.writable ? null : (()=>{throw new Error(
-            // res.status(error.status).json({error: error.res});のために
-            // ここでエラーを投げると、エラーの内容がresに入る
-            // {res: 
-                '書き込み権限がありません'
-                // , status: 403}
-        )})();
+    user || user.writable ? null : (()=>{throw new Error('書き込み権限がありません')})();
 console.log('get_tag_id_by_tag_name_for_insert_tag');
     const tag = get_tag_id_by_tag_name_for_insert_tag(req.body.tag) ? req.body.tag : null;
-
-    console.log('TAG is?? ', tag);
-
     tag ? insert_tag_for_insert_tag(req, tag) : make_tag_and_insert_tag_for_insert_tag(req.body.tag, req.body.link_id);
-    // res.json({message: 'success'});
-    res.status(200).json({result: 'success insert tag'});
+
+    // res.status(200).json({result: 'success insert tag'});
+    // res.status(200).json({message: 'success', result: result});
+    res.status(200)
+        .json({result: 'success'
+            // ,message: response.lastInsertRowid
+        });
     } catch (error) {
         console.log(error.message);
-        res.status(400).json({result: 'fail', error: error.message});
+        res.status(400).json({result: 'fail', message: error.message});
     }
 });
 
@@ -728,32 +583,17 @@ app.post('/get_tags_for_autocomplete', (req, res) => {
         req.body.tag === undefined ?
             db.prepare(`SELECT * FROM tags LIMIT 100`).all() :
             db.prepare(`SELECT * FROM tags WHERE tag LIKE '%${req.body.tag}%' LIMIT 100`).all();
-    res.json({message: 'success', tags});
+
+    res.status(200)
+        .json({result: 'success'
+            ,message: tags
+        });
     } catch (error) {
     console.log(error);
-    error_response(res, 'ERROR: ' + error);
+    // error_response(res, 'ERROR: ' + error);
+    res.status(400).json({result: 'fail', message: error.message});
     }
 });
-
-// tagのデータを削除する
-// 他に紐づくlinkが有る場合は、links_tagsのレコードを削除する
-// 他に紐づくlinkが無い場合は、tagsのレコードとlinks_tagsのレコードを削除する
-//   // tagの所有権(tagを作成したユーザー、もしくはlinkにタグを追加したユーザー)の仕様が決まらないため、一旦コメントアウト
-// app.post('/delete_tag', (req, res) => {
-//     try {
-//         const user = get_user_with_permission(req);
-//         user || user.deletable ? null : (()=>{throw new Error('権限がありません')})();
-//         const result = db.prepare(`SELECT COUNT(*) AS count FROM links_tags WHERE tag_id = ?`).get(req.body.id);
-//         result.count > 1
-//             ? db.prepare(`DELETE FROM links_tags WHERE tag_id = ? AND link_id = ?`).run(req.body.id, req.body.link_id)
-//             : (db.prepare(`DELETE FROM links_tags WHERE tag_id = ?`).run(req.body.id), db.prepare(`DELETE FROM tags WHERE id = ?`).run(req.body.id));
-//     res.json({message: 'success'});
-//     } catch (error) {
-//         console.log(error);
-//         error_response(res, '原因不明のエラー' + error);
-//     }
-// });
-
 
 // commentsのデータを挿入する
 // 1ユーザーにつき1つのlinkに対して1つのcommentしか挿入できない。
@@ -784,10 +624,14 @@ app.post('/insert_comment', (req, res) => {
         db.prepare(`SELECT COUNT(*) AS count FROM comments WHERE user_id = ? AND link_id = ?`).get(user.user_id, req.body.link_id).count > 0 ? (()=>{throw new Error('既に同じcommentが存在する場合はエラー')})() : null;
 
         const result = db.prepare(`INSERT INTO comments (user_id, link_id, comment, created_at, updated_at) VALUES (?, ?, ?, ?, ?)`).run(user.user_id, req.body.link_id, req.body.comment, now(), now());
-        res.json({message: 'success'});
+    res.status(200)
+        .json({result: 'success'
+            // ,message: response.lastInsertRowid
+        });
     } catch (error) {
         console.log(error);
-        error_response(res, '原因不明のエラー' + error);
+        console.log(error.message);
+        res.status(400).json({result: 'fail', message: error.message});
     }
 });
 
@@ -804,11 +648,19 @@ app.post('/delete_comment', (req, res) => {
             ?
             db.prepare(`DELETE FROM comments WHERE id = ? AND user_id = ?`).run(req.body.comment_id, user.user_id)
             : (()=>{throw new Error('権限がありません')})();
-        res.json({message: 'success'});
+    res.status(200)
+        .json({result: 'success'
+            // ,message: response.lastInsertRowid
+        });
     } catch (error) {
-        console.log(error);
-        error_response(res, '原因不明のエラー' + error);
+        console.log(error.message);
+        res.status(400).json({result: 'fail', message: error.message});
     }
+    //     res.json({message: 'success'});
+    // } catch (error) {
+    //     console.log(error);
+    //     error_response(res, '原因不明のエラー' + error);
+    // }
 });
 
 // comment_repliesのデータを挿入する
@@ -843,17 +695,16 @@ app.post('/insert_comment_reply', (req, res) => {
             ? (()=>{throw new Error('既に同じcomment_replyが存在する場合はエラー')})()
             : null;
 
-        const result =
+        const response =
             db.prepare(`INSERT INTO comment_replies (user_id, comment_id, reply, created_at, updated_at) VALUES (?, ?, ?, ?, ?)`)
                 .run(user.user_id, req.body.comment_id, req.body.comment_reply, now(), now());
-
-        res.status(200)
-            .json({result: 'success', 
-                comment_reply_id: result.lastInsertRowid
-            });
+    res.status(200)
+        .json({result: 'success'
+            ,message: response.lastInsertRowid
+        });
     } catch (error) {
         console.log(error.message);
-        res.status(400).json({result: 'fail', error: error.message});
+        res.status(400).json({result: 'fail', message: error.message});
     }
 });
 
@@ -865,7 +716,11 @@ app.post('/delete_comment_reply', (req, res) => {
             ?
             db.prepare(`DELETE FROM comment_replies WHERE id = ? AND user_id = ?`).run(req.body.comment_reply_id, user.user_id)
             : (()=>{throw new Error('権限がありません')})();
-        res.json({message: 'success'});
+        // res.json({message: 'success'});
+        res.status(200)
+            .json({result: 'success'
+                // ,message: result.lastInsertRowid
+            });
     } catch (error) {
         console.log(error);
         error_response(res, '原因不明のエラー' + error);
@@ -947,6 +802,7 @@ app.post('/delete_comment_reply', (req, res) => {
 
 const error_check_for_insert_link = (link) => {
     const WHITE_LIST_URL_ARRAY = [
+        'https://yanaka.dev/',
         'https://www.yahoo.co.jp/',
         'https://www.google.co.jp/',
         'https://www.youtube.com/',
@@ -1004,15 +860,18 @@ app.post('/insert_link', (req, res) => {
         const result = db.prepare(`
         INSERT INTO links (user_id, link, created_at, updated_at) VALUES (?, ?, ?, ?)
         `).run(user.user_id, req.body.link, now(), now());
-        result === undefined ? (()=>{throw new Error('原因不明のinsertエラー')})() : null;
+        // result === undefined ? (()=>{throw new Error('原因不明のinsertエラー')})() : null;
+        response === undefined ? (()=>{throw new Error('原因不明のinsertエラー')})() : null;
 
         // console.log(result);
         res.status(200)
-            .json({result: 'success', link_id: result.lastInsertRowid});
+            .json({result: 'success'
+                ,message: response.lastInsertRowid
+            });
     } catch (error) {
         console.log(error);
         console.log(error.message);
-        res.status(400).json({result: 'fail', error: error.message});
+        res.status(400).json({result: 'fail', message: error.message});
     }
 });
 
