@@ -1,5 +1,5 @@
-// const test_mode = () => true;
-const test_mode = () => false;
+const test_mode = () => true;
+// const test_mode = () => false;
 
 
 // package.json for glitch.com
@@ -159,10 +159,11 @@ try {
     (req.body.test_mode_close !== undefined && req.body.test_mode_close) === 'TEST_MODE_CLOSE' ? db_close2(db) : null;
     res.status(200)
         .json({result: 'success'
+            ,status: 200
             // ,message: 'test_db_init done'
         });
     } catch (error) {
-        res.status(400).json({result: 'fail', message: error.message});
+        res.status(400).json({status: 400, result: 'fail', message: error.message});
     }
 });
 
@@ -243,7 +244,7 @@ const get_user_with_permission = (REQ) => {
          : (()=>{throw new Error('無効な認証')})();
     } catch (error) {
         console.log(error.message);
-        res.status(400).json({result: 'fail', message: error.message});
+        res.status(400).json({status: 400, result: 'fail', message: error.message});
     }
 };
 
@@ -388,11 +389,12 @@ app.get('/read_all', (req, res) => {
         // res.json(pre_result);
     res.status(200)
         .json({result: 'success'
+            ,status: 200
             ,message: response.lastInsertRowid
         });
     } catch (error) {
         console.log(error.message);
-        res.status(400).json({result: 'fail', message: error.message});
+        res.status(400).json({status: 400, result: 'fail', message: error.message});
     }
 });
   
@@ -417,10 +419,14 @@ app.post('/delete_link', (req, res) => {
         db.prepare(`SELECT * FROM links_tags WHERE link_id = ?`).all(req.body.id).length ? db.prepare(`DELETE FROM links_tags WHERE link_id = ?`).run(req.body.id) : null;
         // linkを削除する
         db.prepare(`SELECT * FROM links WHERE id = ? AND user_id = ?`).get(req.body.id, user.user_id) ? db.prepare(`DELETE FROM links WHERE id = ? AND user_id = ?`).run(req.body.id, user.user_id) : (()=>{throw new Error('削除するlinkが見つかりません')})();
-        res.status(200).json({result: 'success'});
+        res.status(200)
+            .json({result: 'success'
+                ,status: 200
+            // ,message: response.lastInsertRowid
+        });
     } catch (error) {
         console.log(error);
-        res.status(400).json({result: 'fail', message: error.message});
+        res.status(400).json({status: 400, result: 'fail', message: error.message});
     }
 });
 
@@ -445,12 +451,17 @@ app.post('/like_increment_or_decrement', (req, res) => {
         const response = like_exists
             ? db.prepare(`DELETE FROM likes WHERE user_id = ? AND link_id = ?`).run(user.user_id, req.body.link_id)
             : db.prepare(`INSERT INTO likes (user_id, link_id, created_at, updated_at) VALUES (?, ?, ?, ?)`).run(user.user_id, req.body.link_id, now(), now());
-        // res.status(200).json({message: 'success', result: result});
-        res.status(200).json({result: 'success', message: response});
+
+        res.status(200)
+            .json({result: 'success'
+                ,status: 200
+                    ,message: response
+            });
+        
+        // .json({result: 'success', message: response});
     } catch (error) {
         console.log(error);
-        error: 
-        res.status(400).json({result: 'fail', message: error.message});
+        res.status(400).json({status: 400, result: 'fail', message: error.message});
     }
 });
 
@@ -562,15 +573,14 @@ console.log('get_tag_id_by_tag_name_for_insert_tag');
     const tag = get_tag_id_by_tag_name_for_insert_tag(req.body.tag) ? req.body.tag : null;
     tag ? insert_tag_for_insert_tag(req, tag) : make_tag_and_insert_tag_for_insert_tag(req.body.tag, req.body.link_id);
 
-    // res.status(200).json({result: 'success insert tag'});
-    // res.status(200).json({message: 'success', result: result});
     res.status(200)
         .json({result: 'success'
+            ,status: 200
             // ,message: response.lastInsertRowid
         });
     } catch (error) {
         console.log(error.message);
-        res.status(400).json({result: 'fail', message: error.message});
+        res.status(400).json({status: 400, result: 'fail', message: error.message});
     }
 });
 
@@ -586,12 +596,13 @@ app.post('/get_tags_for_autocomplete', (req, res) => {
 
     res.status(200)
         .json({result: 'success'
+            ,status: 200
             ,message: tags
         });
     } catch (error) {
     console.log(error);
     // error_response(res, 'ERROR: ' + error);
-    res.status(400).json({result: 'fail', message: error.message});
+    res.status(400).json({status: 400, result: 'fail', message: error.message});
     }
 });
 
@@ -626,12 +637,13 @@ app.post('/insert_comment', (req, res) => {
         const result = db.prepare(`INSERT INTO comments (user_id, link_id, comment, created_at, updated_at) VALUES (?, ?, ?, ?, ?)`).run(user.user_id, req.body.link_id, req.body.comment, now(), now());
     res.status(200)
         .json({result: 'success'
+            ,status: 200
             // ,message: response.lastInsertRowid
         });
     } catch (error) {
         console.log(error);
         console.log(error.message);
-        res.status(400).json({result: 'fail', message: error.message});
+        res.status(400).json({status: 400, result: 'fail', message: error.message});
     }
 });
 
@@ -650,11 +662,12 @@ app.post('/delete_comment', (req, res) => {
             : (()=>{throw new Error('権限がありません')})();
     res.status(200)
         .json({result: 'success'
+            ,status: 200
             // ,message: response.lastInsertRowid
         });
     } catch (error) {
         console.log(error.message);
-        res.status(400).json({result: 'fail', message: error.message});
+        res.status(400).json({status: 400, result: 'fail', message: error.message});
     }
     //     res.json({message: 'success'});
     // } catch (error) {
@@ -700,11 +713,12 @@ app.post('/insert_comment_reply', (req, res) => {
                 .run(user.user_id, req.body.comment_id, req.body.comment_reply, now(), now());
     res.status(200)
         .json({result: 'success'
+            ,status: 200
             ,message: response.lastInsertRowid
         });
     } catch (error) {
         console.log(error.message);
-        res.status(400).json({result: 'fail', message: error.message});
+        res.status(400).json({status: 400, result: 'fail', message: error.message});
     }
 });
 
@@ -719,11 +733,12 @@ app.post('/delete_comment_reply', (req, res) => {
         // res.json({message: 'success'});
         res.status(200)
             .json({result: 'success'
+                ,status: 200
                 // ,message: result.lastInsertRowid
             });
     } catch (error) {
         console.log(error);
-        error_response(res, '原因不明のエラー' + error);
+        res.status(400).json({status: 400, result: 'fail', message: error.message});
     }
 });
 
@@ -812,21 +827,14 @@ const error_check_for_insert_link = (link) => {
     const is_include_WHITE_LIST_URL = (target_url_str) => WHITE_LIST_URL_ARRAY.some((WHITE_LIST_URL) => target_url_str.startsWith(WHITE_LIST_URL));
 
     !is_url(link) ? console.log('URLの形式が正しくありません') : null;
-    console.log('link is' + link + '!!');
 
     switch (true) {
-    case link === undefined:
-        return 'linkが空です';
-    case reserved_words.includes(link):
-        return 'SQLの予約語を含む場合はエラー';
-    case link.length > 2000:
-        return 'URLが長すぎます';
-    case !is_url(link):
-        return 'URLの形式が正しくありません';
-    case !is_include_WHITE_LIST_URL(link):
-        return '許可されていないURLです';
-    default:
-        return 'OK';
+        case link === undefined: return 'linkが空です';
+        case reserved_words.includes(link): return 'SQLの予約語を含む場合はエラー';
+        case link.length > 2000: return 'URLが長すぎます';
+        case !is_url(link): return 'URLの形式が正しくありません';
+        case !is_include_WHITE_LIST_URL(link): return '許可されていないURLです';
+        default: return 'OK';
     }
     // !is_url(link) ? (()=>{throw new Error('URLの形式が正しくありません')})() : null;
     // console.log('link is' + link + '!!');
@@ -836,19 +844,16 @@ const error_check_for_insert_link = (link) => {
 // 正しいリンクが挿入されたときに200を返しresultをjsonで返す
 // リンクが空のときに400 Bad Requestを返す
 // リンクが正しいURLの形式でないときに400 Bad Requestを返す
-// リンクがホワイトリストに含まれていないときに403 Forbiddenを返す
+// リンクがホワイトリストに含まれていないときに400 Bad Requestを返す
 // リンクが300文字より長いときに400 Bad Requestを返す
 // リンクがSQLの予約語を含むときに400 Bad Requestを返す
 // リンクがすでにデータベースに存在するときに400 Bad Requestを返す
 // ユーザーがログインしていないときに401 Unauthorizedを返す
-// ユーザーが書き込み権限を持っていないときに403 Forbiddenを返す
+// ユーザーが書き込み権限を持っていないときに400 Bad Requestを返す
 app.post('/insert_link', (req, res) => {
     try {
-        // console.log(req.body.link);
         const error_check_result = error_check_for_insert_link(req.body.link);
-        console.log("error_check_result");
         console.log(error_check_result);
-        // error_check_result.status === 200 ? null : (()=>{throw new Error(error_check_result.res)})();
         error_check_result === 'OK' ? null : (()=>{throw new Error(error_check_result)})();
 
         const user = get_user_with_permission(req);
@@ -857,21 +862,27 @@ app.post('/insert_link', (req, res) => {
         const link_exists = db.prepare(`SELECT * FROM links WHERE link = ?`).get(req.body.link);
         link_exists ? (()=>{throw new Error('同じlinkが存在します')})() : null;
 
-        const result = db.prepare(`
-        INSERT INTO links (user_id, link, created_at, updated_at) VALUES (?, ?, ?, ?)
-        `).run(user.user_id, req.body.link, now(), now());
-        // result === undefined ? (()=>{throw new Error('原因不明のinsertエラー')})() : null;
-        response === undefined ? (()=>{throw new Error('原因不明のinsertエラー')})() : null;
-
-        // console.log(result);
+        const response = db.prepare(`
+            INSERT INTO links (user_id, link, created_at, updated_at) VALUES (
+                @user_id, @link, @created_at, @updated_at
+        )`).run({
+                user_id: user.user_id,
+                link: req.body.link,
+                created_at: now(),
+                updated_at: now()
+            });
+            console.log(response);
+        response ? null : (()=>{throw new Error('原因不明のinsertエラー')})();
         res.status(200)
             .json({result: 'success'
+                ,status: 200
                 ,message: response.lastInsertRowid
             });
     } catch (error) {
         console.log(error);
         console.log(error.message);
-        res.status(400).json({result: 'fail', message: error.message});
+        res.status(400).json({status: 400, result: 'fail', message: error.message});
+
     }
 });
 
