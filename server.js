@@ -28,6 +28,17 @@ const test_mode = () => true;
 //     }
 //   }
 
+let collect_value = {};
+const collect_value_for_test = (Prop, Val) => {
+    if(test_mode() === true) {
+        collect_value[Prop] = Val;
+    }
+}
+const show_collect_value_for_test = () =>{
+    if(test_mode() === true) {
+        console.table(collect_value);
+    }
+}
 
 function db_init2(DB) {
     try {
@@ -502,49 +513,94 @@ const error_check_for_insert_tag = (tag) => {
 // 既存のタグを返す場合は、links_tagsにレコードを挿入する
 // 新規にタグを作成して返す場合は、tagsにレコードを挿入して、links_tagsにレコードを挿入する
     const get_tag_id_by_tag_name_for_insert_tag = (TAG) => {
-        const tag = db.prepare(`SELECT id, tag FROM tags WHERE tag = ?`).get(TAG)
+        const tag_id = db.prepare(`SELECT tag FROM tags WHERE tag = ?`).get(TAG)
             ? db.prepare(`SELECT id, tag FROM tags WHERE tag = ?`).get(TAG).id
             : null;
-            return tag;
+        console.log('get_tag_id_by_tag_name_for_insert_tag', tag_id);
+            return tag_id;
     };
     const insert_tag_for_insert_tag = (REQ, TAG) => {
         try {
+console.log('insert_tag_for_insert_tag 1');
         // linkに対して既に同じタグがついているかチェックし、ついていたらエラーを返す
-        db.prepare(`
+        const TAG_RESULT = db.prepare(`
         SELECT
         tags.id AS id, tags.tag AS tag
         FROM tags
         LEFT JOIN links_tags ON tags.id = links_tags.tag_id
         WHERE links_tags.link_id = ?
         AND tags.tag = ?
-            `).get(REQ.body.link_id, TAG.tag)
-                ? (()=>{throw new Error('既に同じタグがついています')})()
-                : null;
+            `).get(REQ.body.link_id, TAG);
+        TAG_RESULT
+            ? (()=>{throw new Error('既に同じタグがついています')})()
+            : null;
+console.log('insert_tag_for_insert_tag 2');
+console.log(REQ.body.link_id, TAG.id, TAG, TAG_RESULT);
+
+// const TAG_ID = TAG_RESULT === null ? db.prepare(`SELECT id, tag FROM tags WHERE tag = ?`).get(TAG).id : null;
             
-        const RESULT = db.prepare(`INSERT INTO links_tags (link_id, tag_id, created_at, updated_at) VALUES (?, ?, ?, ?)`).run(REQ.body.link_id, TAG.id, now(), now())
-            ? res.json({message: 'success'})
+        const RESULT = db.prepare(`
+            INSERT INTO links_tags (link_id, tag_id, created_at, updated_at)
+                VALUES (
+                    @link_id,
+                    @tag_id,
+                    @created_at,
+                    @updated_at
+                )
+                `).run({
+                    link_id: REQ.body.link_id,
+                    tag_id: db.prepare(`SELECT id FROM tags WHERE tag = ?`).get(TAG).id,
+                    created_at: now(),
+                    updated_at: now()
+                })
+                ? 'OK'
                 : (()=>{throw new Error('links_tagsにレコードを挿入できませんでした')})();
+console.log('insert_tag_for_insert_tag 3');
         console.log('RESULT is', RESULT);
-        // return RESULT ? RESULT.id : null;
-        return RESULT;
+        // return RESULT;
         } catch (error) {
-            (()=>{throw new Error('既に同じタグがついているか、何かのタグの新規追加エラー')})()
+            // (()=>{throw new Error('既に同じタグがついているか、何かのタグの新規追加エラー')})()
+            (()=>{throw new Error(error.message)})()
         }
+
     };
     const make_tag_and_insert_tag_for_insert_tag = (TAG, LINK_ID) => {
         try {
-        // linkに対して既に同じタグがついているかチェックし、ついていたらエラーを返す
-        db.prepare(`
-        SELECT
-        tags.id AS id, tags.tag AS tag
-        FROM tags
-        LEFT JOIN links_tags ON tags.id = links_tags.tag_id
-        WHERE links_tags.link_id = ?
-        AND tags.tag = ?
-        `).get(LINK_ID, TAG)
-                ? (()=>{throw new Error('既に同じタグがついています')})()
-                : null;
+console.log(
+    'TAG', TAG,
+    'LINK_ID', LINK_ID
+)
+console.log('make_tag_and_insert_tag_for_insert_tag 1');
+    //     // linkに対して既に同じタグがついているかチェックし、ついていたらエラーを返す
+    //     db.prepare(`
+    //     SELECT
+    //     tags.id AS id, tags.tag AS tag
+    //     FROM tags
+    //     LEFT JOIN links_tags ON tags.id = links_tags.tag_id
+    //           links_tags.tag_id
+    //     WHERE links_tags.link_id = ?
+    //     AND tags.tag = ?
+    //     `).get(LINK_ID, TAG)
+    //             ? (()=>{throw new Error('既に同じタグがついています')})()
+    //             : null;
+// linkに対して既に同じタグがついているかチェックし、ついていたらエラーを返す
+const TAG_RESULT = db.prepare(`
+SELECT
+tags.id AS id, tags.tag AS tag
+FROM tags
+LEFT JOIN links_tags ON tags.id = links_tags.tag_id
+WHERE links_tags.link_id = ?
+AND tags.tag = ?
+    `).get(LINK_ID, TAG);
+TAG_RESULT
+    ? (()=>{throw new Error('既に同じタグがついています')})()
+    : null;
 
+console.log(
+    'TAG', TAG,
+    'LINK_ID', LINK_ID
+)
+console.log('make_tag_and_insert_tag_for_insert_tag 2');
         db.prepare(`INSERT INTO tags (tag) VALUES (?)`).run(TAG)
             ? null
             // : (()=>{throw new Error({res: 'tagsにレコードを挿入できませんでした', status: 500})})();
@@ -556,9 +612,11 @@ const error_check_for_insert_tag = (tag) => {
             ? null
             // : (()=>{throw new Error({res: 'links_tagsにレコードを挿入できませんでした', status: 500})})();
             : (()=>{throw new Error('links_tagsにレコードを挿入できませんでした')})();
+console.log('make_tag_and_insert_tag_for_insert_tag 3');
         return newTag;
         } catch (error) {
-            (()=>{throw new Error('既に同じタグがついているか、何かの既存タグ追加エラー')})()
+            // (()=>{throw new Error('既に同じタグがついているか、何かの既存タグ追加エラー')})()
+            (()=>{throw new Error(error.message)})()
         }
     };
 app.post('/insert_tag', (req, res) => {
@@ -567,16 +625,22 @@ console.log(req.body.tag);
     const error_check_result = error_check_for_insert_tag(req.body.tag);
     console.log(error_check_result);
     error_check_result === 'OK' ? null : (()=>{throw new Error(error_check_result)})();
-//     const user = get_user_with_permission(req);
-//     user || user.writable ? null : (()=>{throw new Error('書き込み権限がありません')})();
-// console.log('get_tag_id_by_tag_name_for_insert_tag');
-//     const tag = get_tag_id_by_tag_name_for_insert_tag(req.body.tag) ? req.body.tag : null;
-//     tag ? insert_tag_for_insert_tag(req, tag) : make_tag_and_insert_tag_for_insert_tag(req.body.tag, req.body.link_id);
+    const user = get_user_with_permission(req);
+    user || user.writable ? null : (()=>{throw new Error('書き込み権限がありません')})();
+console.log('get_tag_id_by_tag_name_for_insert_tag');
+    const tag_id = get_tag_id_by_tag_name_for_insert_tag(req.body.tag) ? req.body.tag : null;
+console.log('tag_id', tag_id);
+tag_id ? insert_tag_for_insert_tag(req, req.body.tag) : make_tag_and_insert_tag_for_insert_tag(req.body.tag, req.body.link_id);
 
-//     res.status(200)
-//         .json({result: 'success'
-//             ,status: 200
-//         });
+collect_value_for_test('__/insert_tag__req.body.tag', req.body.tag);
+collect_value_for_test('__/insert_tag__req.body.link_id', req.body.link_id);
+collect_value_for_test('__/insert_tag__tag_id', tag_id);
+
+
+    res.status(200)
+        .json({result: 'success'
+            ,status: 200
+        });
 
     } catch (error) {
         console.log(error.message);
@@ -891,6 +955,12 @@ app.post('/insert_link', (req, res) => {
             });
             console.log(response);
         response ? null : (()=>{throw new Error('原因不明のinsertエラー')})();
+
+        collect_value_for_test('__/insert_link__user.user_id', user.user_id);
+        collect_value_for_test('__/insert_link__req.body.link', req.body.link);
+        collect_value_for_test('__/insert_link__response', response);
+        // show_collect_value_for_test();
+
         res.status(200)
             .json({result: 'success'
                 ,status: 200
@@ -905,3 +975,16 @@ app.post('/insert_link', (req, res) => {
 });
 
 
+app.post('/get_collect_value_for_test', (req, res) => {
+    try {
+        res.status(200)
+            .json({result: 'success'
+                ,status: 200
+                ,message: collect_value
+            });
+    }
+    catch (error) {
+        console.log(error);
+        res.status(400).json({status: 400, result: 'fail', message: error.message});
+    }
+});
