@@ -617,6 +617,7 @@ console.log('make_tag_and_insert_tag_for_insert_tag 3');
         }
     };
 app.post('/insert_tag', (req, res) => {
+
     try {
 collect_value_for_test('__/insert_tag__req.body.tag', req.body.tag);
 collect_value_for_test('__/insert_tag__req.body.link_id', req.body.link_id);
@@ -640,24 +641,6 @@ collect_value_for_test('__/insert_tag__tag_id', tag_id);
             ,status: 200
         });
 
-    } catch (error) {
-        console.log(error.message);
-        res.status(400).json({status: 400, result: 'fail', message: error.message});
-    }
-});
-
-app.post('/insert_tag2', (req, res) => {
-    try {
-console.log(req.body.tag);
-    const error_check_result = error_check_for_insert_tag(req.body.tag);
-console.log(error_check_result);
-    error_check_result === 'OK' ? null : (()=>{throw new Error(error_check_result)})();
-console.log(error_check_result);
-   
-    // res.status(200)
-    //     .json({result: 'success'
-    //         ,status: 200
-    //     });
     } catch (error) {
         console.log(error.message);
         res.status(400).json({status: 400, result: 'fail', message: error.message});
@@ -694,14 +677,14 @@ app.post('/get_tags_for_autocomplete', (req, res) => {
 const error_check_insert_comment = (comment, DATA_LIMIT) => {
     const reserved_words = ['SELECT', 'FROM', 'WHERE', 'INSERT', 'DELETE', 'UPDATE', 'DROP', 'ALTER', 'CREATE', 'TABLE', 'INTO', 'VALUES', 'AND', 'OR', 'NOT', 'NULL', 'TRUE', 'FALSE'];
     switch (true) {
-        case comment === undefined: return 'commentが空の場合はエラー'; break;
-        case comment.length > DATA_LIMIT: return 'commentの文字数がdata_limitを超える場合はエラー'; break;
-        case comment.length === 0: return '0文字の場合はエラー'; break;
-        case comment.match(/[!-/:-@[-`{-~]/g): return '記号を含む場合はエラー'; break;
-        case comment.match(/\s/g): return '空白を含む場合はエラー'; break;
-        case comment.length > 300: return '300文字以上はエラー'; break;
-        case reserved_words.includes(comment): return 'SQLの予約語を含む場合はエラー'; break;
-        default: return 'OK'; break;
+        case comment === undefined: return 'commentが空の場合はエラー';
+        case comment.length > DATA_LIMIT: return 'commentの文字数がdata_limitを超える場合はエラー';
+        case comment.length === 0: return '0文字の場合はエラー';
+        case comment.match(/[!-/:-@[-`{-~]/g): return '記号を含む場合はエラー';
+        case comment.match(/\s/g): return '空白を含む場合はエラー';
+        case comment.length > 300: return '300文字以上はエラー';
+        case reserved_words.includes(comment): return 'SQLの予約語を含む場合はエラー';
+        default: return 'OK';
     }
 }
 app.post('/insert_comment', (req, res) => {

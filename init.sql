@@ -132,10 +132,21 @@ created_at, updated_at) VALUES (3, 'pro', 1, 1, 1, 1, 1,
 400000,
 DATETIME('now'), DATETIME('now'));
 
+INSERT INTO user_permission (id, permission,
+readable,
+writable,
+deletable,
+likable,
+commentable,
+data_limit,
+created_at, updated_at) VALUES (4, 'test', 1, 1, 1, 1, 1,
+1000,
+DATETIME('now'), DATETIME('now'));
+
 
 -- usersにデータをレコード挿入する
 INSERT INTO users (user_permission_id, username, userpassword, created_at, updated_at) VALUES (1, 'GUEST', 'GUEST_PASS', DATETIME('now'), DATETIME('now'));
 INSERT INTO users (user_permission_id, username, userpassword, created_at, updated_at) VALUES (2, 'user1', 'user_pass1', DATETIME('now'), DATETIME('now'));
 INSERT INTO users (user_permission_id, username, userpassword, created_at, updated_at) VALUES (2, 'user2', 'user_pass2', DATETIME('now'), DATETIME('now'));
 INSERT INTO users (user_permission_id, username, userpassword, created_at, updated_at) VALUES (3, 'pro1', 'pro_pass1', DATETIME('now'), DATETIME('now'));
-INSERT INTO users (user_permission_id, username, userpassword, created_at, updated_at) VALUES (3, 'testuser', 'duct_mean_fuckst1ck', DATETIME('now'), DATETIME('now'));
+INSERT INTO users (user_permission_id, username, userpassword, created_at, updated_at) VALUES (4, 'testuser', 'duct_mean_fuckst1ck', DATETIME('now'), DATETIME('now'));
