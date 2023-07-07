@@ -28,17 +28,14 @@ const test_mode = () => true;
 //     }
 //   }
 
-let collect_value = {};
+let collect_value = [];
 const collect_value_for_test = (Prop, Val) => {
-    if(test_mode() === true) {
-        collect_value[Prop] = Val;
-    }
+    let obj = {};
+    obj[Prop] = Val;
+    test_mode() === true ? collect_value.push(obj) : null;
 }
-const show_collect_value_for_test = () =>{
-    if(test_mode() === true) {
-        console.table(collect_value);
-    }
-}
+// const show_collect_value_for_test = () => test_mode() === true ? console.table(collect_value) : null;
+
 
 function db_init2(DB) {
     try {
@@ -621,6 +618,9 @@ console.log('make_tag_and_insert_tag_for_insert_tag 3');
     };
 app.post('/insert_tag', (req, res) => {
     try {
+collect_value_for_test('__/insert_tag__req.body.tag', req.body.tag);
+collect_value_for_test('__/insert_tag__req.body.link_id', req.body.link_id);
+
 console.log(req.body.tag);
     const error_check_result = error_check_for_insert_tag(req.body.tag);
     console.log(error_check_result);
@@ -632,8 +632,6 @@ console.log('get_tag_id_by_tag_name_for_insert_tag');
 console.log('tag_id', tag_id);
 tag_id ? insert_tag_for_insert_tag(req, req.body.tag) : make_tag_and_insert_tag_for_insert_tag(req.body.tag, req.body.link_id);
 
-collect_value_for_test('__/insert_tag__req.body.tag', req.body.tag);
-collect_value_for_test('__/insert_tag__req.body.link_id', req.body.link_id);
 collect_value_for_test('__/insert_tag__tag_id', tag_id);
 
 
@@ -958,7 +956,7 @@ app.post('/insert_link', (req, res) => {
 
         collect_value_for_test('__/insert_link__user.user_id', user.user_id);
         collect_value_for_test('__/insert_link__req.body.link', req.body.link);
-        collect_value_for_test('__/insert_link__response', response);
+        // collect_value_for_test('__/insert_link__response', response);
         // show_collect_value_for_test();
 
         res.status(200)
