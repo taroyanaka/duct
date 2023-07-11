@@ -494,14 +494,14 @@ const error_check_for_insert_tag = (tag) => {
         return symbols.some((symbol) => tag.includes(symbol));
     };    
     switch (true) {
-    case tag === undefined: return 'tagが空です';
-    // checkForSymbolsに空白チェックが含まれるため、先にチェックする
-    case checkForSpaces(tag): return '空白を含む場合はエラー';
-    // /^[-#!$@%^&*()_+|~=`{}\[\]:";'<>?,.\/ ]$/を含む場合はエラー。'記号を含む場合はエラー'を返す
-    case checkForSymbols(tag): return '記号を含む場合はエラー';
-    case tag.length > 7: return '7文字以上はエラー';
-    case reserved_words.includes(tag): return 'SQLの予約語を含む場合はエラー';
-    default: return 'OK';
+        case tag === undefined: return 'tagが空です'; break;
+        // checkForSymbolsに空白チェックが含まれるため、先にチェックする
+        case checkForSpaces(tag): return '空白を含む場合はエラー'; break;
+        // /^[-#!$@%^&*()_+|~=`{}\[\]:";'<>?,.\/ ]$/を含む場合はエラー。'記号を含む場合はエラー'を返す
+        case checkForSymbols(tag): return '記号を含む場合はエラー'; break;
+        case tag.length > 7: return '7文字以上はエラー'; break;
+        case reserved_words.includes(tag): return 'SQLの予約語を含む場合はエラー'; break;
+        default: return 'OK'; break;
     }
 };
 // tagにデータをレコード挿入するエンドポイント
@@ -677,14 +677,14 @@ app.post('/get_tags_for_autocomplete', (req, res) => {
 const error_check_insert_comment = (comment, DATA_LIMIT) => {
     const reserved_words = ['SELECT', 'FROM', 'WHERE', 'INSERT', 'DELETE', 'UPDATE', 'DROP', 'ALTER', 'CREATE', 'TABLE', 'INTO', 'VALUES', 'AND', 'OR', 'NOT', 'NULL', 'TRUE', 'FALSE'];
     switch (true) {
-        case comment === undefined: return 'commentが空の場合はエラー';
-        case comment.length > DATA_LIMIT: return 'commentの文字数がdata_limitを超える場合はエラー';
-        case comment.length === 0: return '0文字の場合はエラー';
-        case comment.match(/[!-/:-@[-`{-~]/g): return '記号を含む場合はエラー';
-        case comment.match(/\s/g): return '空白を含む場合はエラー';
-        case comment.length > 300: return '300文字以上はエラー';
-        case reserved_words.includes(comment): return 'SQLの予約語を含む場合はエラー';
-        default: return 'OK';
+        case comment === undefined: return 'commentが空の場合はエラー'; break;
+        case comment.length > DATA_LIMIT: return 'commentの文字数がdata_limitを超える場合はエラー'; break;
+        case comment.length === 0: return '0文字の場合はエラー'; break;
+        case comment.match(/[!-/:-@[-`{-~]/g): return '記号を含む場合はエラー'; break;
+        case comment.match(/\s/g): return '空白を含む場合はエラー'; break;
+        case comment.length > 300: return '300文字以上はエラー'; break;
+        case reserved_words.includes(comment): return 'SQLの予約語を含む場合はエラー'; break;
+        default: return 'OK'; break;
     }
 }
 app.post('/insert_comment', (req, res) => {
@@ -767,9 +767,12 @@ app.post('/insert_comment_reply', (req, res) => {
             ? null
             : (()=>{throw new Error(error_check_result)})();
 
+        // 同じユーザーから同じcommentへのreplyが既に存在する場合はエラー
         db.prepare(`SELECT COUNT(*) AS count FROM comment_replies WHERE user_id = ? AND comment_id = ?`).get(user.user_id, req.body.comment_id).count > 0
-            ? (()=>{throw new Error('既に同じcomment_replyが存在する場合はエラー')})()
+            ? (()=>{throw new Error('同じユーザーから同じcommentへのreplyが既に存在する場合はエラー')})()
             : null;
+
+
 
         const response =
             db.prepare(`INSERT INTO comment_replies (user_id, comment_id, reply, created_at, updated_at) VALUES (?, ?, ?, ?, ?)`)
@@ -892,12 +895,12 @@ const error_check_for_insert_link = (link) => {
     !is_url(link) ? console.log('URLの形式が正しくありません') : null;
 
     switch (true) {
-        case link === undefined: return 'linkが空です';
-        case reserved_words.includes(link): return 'SQLの予約語を含む場合はエラー';
-        case link.length > 2000: return 'URLが長すぎます';
-        case !is_url(link): return 'URLの形式が正しくありません';
-        case !is_include_WHITE_LIST_URL(link): return '許可されていないURLです';
-        default: return 'OK';
+        case link === undefined: return 'linkが空です'; break;
+        case reserved_words.includes(link): return 'SQLの予約語を含む場合はエラー'; break;
+        case link.length > 2000: return 'URLが長すぎます'; break;
+        case !is_url(link): return 'URLの形式が正しくありません'; break;
+        case !is_include_WHITE_LIST_URL(link): return '許可されていないURLです'; break;
+        default: return 'OK'; break;
     }
     // !is_url(link) ? (()=>{throw new Error('URLの形式が正しくありません')})() : null;
     // console.log('link is' + link + '!!');
