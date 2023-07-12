@@ -445,28 +445,56 @@ app.post('/like_increment_or_decrement', (req, res) => {
         user || user.likable ? null : (()=>{throw new Error('権限がありません')})();
 
         const error_check = (user_id, link_id) => {
-            const user_exists = db.prepare(`SELECT * FROM users WHERE id = ?`).get(user_id);
-            const link_exists = db.prepare(`SELECT * FROM links WHERE id = ?`).get(link_id);
-            return !user_exists ?  (()=>{throw new Error('no existing user_id should return 400')})() :
-                    !link_exists ? (()=>{throw new Error('no existing link_id should return 400')})() :
-                    null;
-        };
-        error_check(req.body.user_id, req.body.link_id);
+            try {
+                // link_idが存在しないなら400エラー
+                link_id ? null : (()=>{throw new Error('link_idがありません')})();
 
-        const like_exists = db.prepare(`SELECT * FROM likes WHERE user_id = ? AND link_id = ?`).get(user.user_id, req.body.link_id)
-            ? true
-            : (()=>{throw new Error('そんなlikeは無えよ')})();
-        const response = like_exists
-            ? db.prepare(`DELETE FROM likes WHERE user_id = ? AND link_id = ?`).run(user.user_id, req.body.link_id)
-            : db.prepare(`INSERT INTO likes (user_id, link_id, created_at, updated_at) VALUES (?, ?, ?, ?)`).run(user.user_id, req.body.link_id, now(), now());
+                const user_exists = db.prepare(`SELECT * FROM users WHERE id = ?`).get(user_id);
+                const link_exists = db.prepare(`SELECT * FROM links WHERE id = ?`).get(link_id);
+                return !user_exists ?  (()=>{throw new Error('user_idがありません')})() :
+                        !link_exists ? (()=>{throw new Error('link_idがありません')})() :
+                        null;                    
+            } catch (error) {
+                console.log(error);
+                (()=>{throw new Error(error.message)})();
+            }
+        };
+
+        collect_value_for_test('__/like_increment_or_decrement__req.body.link_id', req.body.link_id);
+        error_check(user.user_id, req.body.link_id);
+
+        const like_exists = db.prepare(`SELECT * FROM likes WHERE user_id = ? AND link_id = ?`).get(user.user_id, req.body.link_id);
+            // ? true
+            // : (()=>{throw new Error('そんなlikeは無えよ')})();
+
+        let response = null;
+        const decrement_it = () => {
+            try {
+            db.prepare(`DELETE FROM likes WHERE user_id = ? AND link_id = ?`).run(user.user_id, req.body.link_id)
+                ? response = 'decrement_it'
+                : (()=>{throw new Error('likeの削除に失敗しました')})();
+            } catch (error) {
+                console.log(error);
+                (()=>{throw new Error(error.message)})();
+            }
+        };
+        const increment_it = () => {
+            try {
+            db.prepare(`INSERT INTO likes (user_id, link_id, created_at, updated_at) VALUES (?, ?, ?, ?)`).run(user.user_id, req.body.link_id, now(), now())
+                ? response = 'increment_it'
+                : (()=>{throw new Error('likeの追加に失敗しました')})();
+            } catch (error) {
+                console.log(error);
+                (()=>{throw new Error(error.message)})();
+            }
+        };
+        like_exists ? decrement_it() : increment_it();
 
         res.status(200)
             .json({result: 'success'
                 ,status: 200
-                    ,message: response
+                ,message: response
             });
-        
-        // .json({result: 'success', message: response});
     } catch (error) {
         console.log(error);
         res.status(400).json({status: 400, result: 'fail', message: error.message});
@@ -746,12 +774,13 @@ app.post('/delete_comment', (req, res) => {
 // 10文字以上はエラー。既に同じcomment_replyが存在する場合はエラー
 const error_check_insert_comment_reply = (comment_reply, DATA_LIMIT) => {
     const reserved_words = ['SELECT', 'FROM', 'WHERE', 'INSERT', 'DELETE', 'UPDATE', 'DROP', 'ALTER', 'CREATE', 'TABLE', 'INTO', 'VALUES', 'AND', 'OR', 'NOT', 'NULL', 'TRUE', 'FALSE'];
+    const checkForSpaces = (tag) => [' ', '　'].some((space) => tag.includes(space));
     switch (true) {
         case comment_reply === undefined: return 'comment_replyが空の場合はエラー'; break;
         case comment_reply.length > DATA_LIMIT: return 'comment_replyの文字数がdata_limitを超える場合はエラー'; break;
         case comment_reply.length === 0: return '0文字の場合はエラー'; break;
         case comment_reply.match(/[!-/:-@[-`{-~]/g): return '記号を含む場合はエラー'; break;
-        case comment_reply.match(/\s/g): return '空白を含む場合はエラー'; break;
+        case checkForSpaces(comment_reply): return '空白を含む場合はエラー'; break;
         case comment_reply.length > 10: return '10文字以上はエラー'; break;
         case reserved_words.includes(comment_reply): return 'SQLの予約語を含む場合はエラー'; break;
         default: return 'OK'; break;
@@ -790,13 +819,17 @@ app.post('/insert_comment_reply', (req, res) => {
 
 app.post('/delete_comment_reply', (req, res) => {
     try {
+
         const user = get_user_with_permission(req);
         user || user.commentable ? null : (()=>{throw new Error('権限がありません')})();
         db.prepare(`SELECT * FROM comment_replies WHERE id = ? AND user_id = ?`).get(req.body.comment_reply_id, user.user_id)
             ?
             db.prepare(`DELETE FROM comment_replies WHERE id = ? AND user_id = ?`).run(req.body.comment_reply_id, user.user_id)
             : (()=>{throw new Error('権限がありません')})();
-        // res.json({message: 'success'});
+
+        collect_value_for_test('__delete_comment_reply__req.body.comment_reply_id', req.body.comment_reply_id);
+        collect_value_for_test('__delete_comment_reply__user.user_id', user.user_id);
+
         res.status(200)
             .json({result: 'success'
                 ,status: 200
