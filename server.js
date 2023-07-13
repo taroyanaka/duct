@@ -506,26 +506,15 @@ app.post('/like_increment_or_decrement', (req, res) => {
 const error_check_for_insert_tag = (tag) => {
     const reserved_words = ['SELECT', 'FROM', 'WHERE', 'INSERT', 'DELETE', 'UPDATE', 'DROP', 'ALTER', 'CREATE', 'TABLE', 'INTO', 'VALUES', 'AND', 'OR', 'NOT', 'NULL', 'TRUE', 'FALSE'];
     // 空白を含むかチェックする1行の関数。大文字の空白もチェックする。含まれていたらtrueを返す
-    const checkForSpaces = (tag) => {
-        console.log('checkForSpaces');
-        // console.log(tag);
-        const spaces = [' ', '　'];
-        // tagの中に空白が含まれているかチェックする。含まれていたらtrueを返す
-        const hoge = spaces.some((space) => tag.includes(space));
-        console.log('hoge is', hoge);
-
-    }
+    const checkForSpaces = (tag) => [' ', '　'].some((space) => tag.includes(space));
     // 記号が含まれているかチェックする1行の関数。含まれていたらtrueを返す
     const checkForSymbols = (tag) => {
-        console.log('checkForSymbols');
-        const symbols = ['-', '#', '!', '$', '@', '%', '^', '&', '*', '(', ')', '_', '+', '|', '~', '=', '`', '{', '}', '[', ']', ':', '"', ';', '\'', '<', '>', '?', ',', '.', '/', ' '];
+        const symbols = ['-', '#', '!', '$', '@', '%', '^', '&', '*', '(', ')', '_', '+', '|', '~', '=', '`', '{', '}', '[', ']', ':', '"', ';', '\'', '<', '>', '?', ',', '.', '/'];
         return symbols.some((symbol) => tag.includes(symbol));
-    };    
+    };
     switch (true) {
         case tag === undefined: return 'tagが空です'; break;
-        // checkForSymbolsに空白チェックが含まれるため、先にチェックする
         case checkForSpaces(tag): return '空白を含む場合はエラー'; break;
-        // /^[-#!$@%^&*()_+|~=`{}\[\]:";'<>?,.\/ ]$/を含む場合はエラー。'記号を含む場合はエラー'を返す
         case checkForSymbols(tag): return '記号を含む場合はエラー'; break;
         case tag.length > 7: return '7文字以上はエラー'; break;
         case reserved_words.includes(tag): return 'SQLの予約語を含む場合はエラー'; break;
@@ -704,12 +693,18 @@ app.post('/get_tags_for_autocomplete', (req, res) => {
 // 300文字以上はエラー。既に同じcommentが存在する場合はエラー
 const error_check_insert_comment = (comment, DATA_LIMIT) => {
     const reserved_words = ['SELECT', 'FROM', 'WHERE', 'INSERT', 'DELETE', 'UPDATE', 'DROP', 'ALTER', 'CREATE', 'TABLE', 'INTO', 'VALUES', 'AND', 'OR', 'NOT', 'NULL', 'TRUE', 'FALSE'];
+    const checkForSpaces = (tag) => [' ', '　'].some((space) => tag.includes(space));
+    // 記号が含まれているかチェックする1行の関数。含まれていたらtrueを返す
+    const checkForSymbols = (comment) => {
+        const symbols = ['-', '#', '!', '$', '@', '%', '^', '&', '*', '(', ')', '_', '+', '|', '~', '=', '`', '{', '}', '[', ']', ':', '"', ';', '\'', '<', '>', '?', ',', '.', '/'];
+        return symbols.some((symbol) => comment.includes(symbol));
+    };
     switch (true) {
         case comment === undefined: return 'commentが空の場合はエラー'; break;
         case comment.length > DATA_LIMIT: return 'commentの文字数がdata_limitを超える場合はエラー'; break;
         case comment.length === 0: return '0文字の場合はエラー'; break;
-        case comment.match(/[!-/:-@[-`{-~]/g): return '記号を含む場合はエラー'; break;
-        case comment.match(/\s/g): return '空白を含む場合はエラー'; break;
+        case checkForSpaces(comment): return '空白を含む場合はエラー'; break;
+        case checkForSymbols(comment): return '記号を含む場合はエラー'; break;
         case comment.length > 300: return '300文字以上はエラー'; break;
         case reserved_words.includes(comment): return 'SQLの予約語を含む場合はエラー'; break;
         default: return 'OK'; break;
@@ -775,12 +770,17 @@ app.post('/delete_comment', (req, res) => {
 const error_check_insert_comment_reply = (comment_reply, DATA_LIMIT) => {
     const reserved_words = ['SELECT', 'FROM', 'WHERE', 'INSERT', 'DELETE', 'UPDATE', 'DROP', 'ALTER', 'CREATE', 'TABLE', 'INTO', 'VALUES', 'AND', 'OR', 'NOT', 'NULL', 'TRUE', 'FALSE'];
     const checkForSpaces = (tag) => [' ', '　'].some((space) => tag.includes(space));
+    // 記号が含まれているかチェックする1行の関数。含まれていたらtrueを返す
+    const checkForSymbols = (comment_reply) => {
+        const symbols = ['-', '#', '!', '$', '@', '%', '^', '&', '*', '(', ')', '_', '+', '|', '~', '=', '`', '{', '}', '[', ']', ':', '"', ';', '\'', '<', '>', '?', ',', '.', '/'];
+        return symbols.some((symbol) => comment_reply.includes(symbol));
+    };
     switch (true) {
         case comment_reply === undefined: return 'comment_replyが空の場合はエラー'; break;
         case comment_reply.length > DATA_LIMIT: return 'comment_replyの文字数がdata_limitを超える場合はエラー'; break;
         case comment_reply.length === 0: return '0文字の場合はエラー'; break;
-        case comment_reply.match(/[!-/:-@[-`{-~]/g): return '記号を含む場合はエラー'; break;
         case checkForSpaces(comment_reply): return '空白を含む場合はエラー'; break;
+        case checkForSymbols(comment_reply): return '記号を含む場合はエラー'; break;
         case comment_reply.length > 10: return '10文字以上はエラー'; break;
         case reserved_words.includes(comment_reply): return 'SQLの予約語を含む場合はエラー'; break;
         default: return 'OK'; break;
