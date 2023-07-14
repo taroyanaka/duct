@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <!-- :ja プログラミングで数学を理解する試み -->
+  <!-- :en try_to_understand_mathematics_with_programming -->
+  <title>try_to_understand_mathematics_with_programming</title>
+  <script src="https://jsxgraph.uni-bayreuth.de/distrib/jsxgraphcore.js"></script>
+  <!-- 参考URL -->
+  <!-- https://benesse.jp/teikitest/kou/math/matha/index.html -->
+  <!-- https://yorikuwa.com/m1000/ -->
+
+  <!-- 仮説 -->
+  <!-- 解があるものと変数があるようなものはグラフ化しやすい -->
+  <!-- 解がないものはグラフ化できない(少なくともプログラミングしづらい) -->
+</head>
+<body>
+
+  x: <input type="number" id="input_x" value="1">
+  y: <input type="number" id="input_y" value="1">
+  z: <input type="number" id="input_z" value="1">
+  k: <input type="number" id="input_k" value="1">
+
+
+<!-- jsxgraphの描画領域 -->
+<div id="box" class="jxgbox" style="width:500px; height:500px;"></div>
+
+
+</body>
+<script>
+
+// A∩B集合をjsxgraphで描画する関数
+const fn_1 = () => {
+
+  // 描画領域の設定
+  const board = JXG.JSXGraph.initBoard('box', {
+    boundingbox: [-5, 5, 5, -5],
+    axis: true,
+    grid: true,
+    keepaspectratio: true,
+    showNavigation: true
+  });
+
+  // A集合の描画
+  const A = board.create('circle', [[0, 0], 3], {
+    strokeColor: 'blue',
+    fillColor: 'blue',
+    highlight: false,
+    fillOpacity: 0.2,
+    strokeWidth: 2,
+    fixed: true
+  });
+
+  // B集合の描画
+  const B = board.create('circle', [[1, 0], 3], {
+    strokeColor: 'red',
+    fillColor: 'red',
+    highlight: false,
+    fillOpacity: 0.2,
+    strokeWidth: 2,
+    fixed: true
+  });
+
+  // A∩B集合の描画
+  const A_n_B = board.create('circle', [[1, 0], 2], {
+    strokeColor: 'black',
+    fillColor: 'black',
+    highlight: false,
+    fillOpacity: 0.7,
+    strokeWidth: 2,
+    fixed: true
+  });
+
+  // A集合の名前
+  board.create('text', [0.5, 0.5, 'A'], {
+    strokeColor: 'blue',
+    fillColor: 'blue',
+    highlight: false,
+    fixed: true
+  });
+
+  // それぞれのラベルを描画
+  board.create('text', [0.5, 1.5, () => {
+    return 'A∩B';
+  }], {
+    strokeColor: 'black',
+    fillColor: 'black',
+    highlight: false,
+    fixed: true
+  });
+  board.create('text', [1.5, 1.5, () => {
+    return 'B';
+  }], {
+    strokeColor: 'red',
+    fillColor: 'red',
+    highlight: false,
+    fixed: true
+  });
+  board.create('text', [1.5, -1.5, () => {
+    return 'A';
+  }], {
+    strokeColor: 'blue',
+    fillColor: 'blue',
+    highlight: false,
+    fixed: true
+  });
+}
+
+
+
+
+// 【場合の数と確率】A￣∪Bの図をjsxgraphで描画する関数
+const fn_2 = () => {
+  const board = JXG.JSXGraph.initBoard('box', {
+    boundingbox: [-5, 5, 5, -5],
+    axis: true,
+    grid: true,
+    keepaspectratio: true,
+    showNavigation: true
+  });
+
+
+    // AとBの集合を定義する
+    const A = board.create('circle', [[-1, 0], 1], { fillColor: 'lightblue' });
+    const B = board.create('circle', [[1, 0], 1], { fillColor: 'lightgreen' });
+
+    // Aの補集合を定義する
+    const AComplement = board.create('curve', [[-2, 2], [-1, 0], [-2, -2]], { strokeColor: 'black' });
+
+    // Aの補集合とBの和集合を定義する
+    const AComplementOrB = board.create('polygon', [AComplement.point1, AComplement.point2, B.point2, B.point1], { fillColor: 'orange' });
+
+}
+
+
+
+// 【場合の数と確率】∪と∩の違いをjsxgraphで描画する関数
+const fn_3 = () => {
+  const board = JXG.JSXGraph.initBoard('box', {
+    boundingbox: [-5, 5, 5, -5],
+    axis: true,
+    grid: true,
+    keepaspectratio: true,
+    showNavigation: true
+  });
+
+  // ∪の描画
+  const A = board.create('circle', [[-1, 0], 1], { fillColor: 'lightblue' });
+  const B = board.create('circle', [[1, 0], 1], { fillColor: 'lightgreen' });
+  const AorB = board.create('polygon', [A.point1, A.point2, B.point2, B.point1], { fillColor: 'orange' });
+}
+const fn_3_2 = () =>{
+    // ∩の描画を新たにboardを作成して描画
+  // 違う色で描画するために新たにboardを作成する
+  const board2 = JXG.JSXGraph.initBoard('box2', {
+    boundingbox: [-5, 5, 5, -5],
+    axis: true,
+    grid: true,
+    keepaspectratio: true,
+    showNavigation: true
+  });
+// ∩とは、AとBの両方に属する要素からなる集合
+  const A2 = board2.create('circle', [[-1, 0], 1], { fillColor: 'lightblue' });
+  const B2 = board2.create('circle', [[1, 0], 1], { fillColor: 'lightgreen' });
+  const AandB = board2.create('polygon', [A2.point1, B2.point1, B2.point2, A2.point2], { fillColor: 'orange' });
+
+}
+
+
+// 【場合の数と確率】「どちらか一方」と「少なくとも一方」をjsxgraphで描画する関数
+const fn_4 = () => {
+  const board = JXG.JSXGraph.initBoard('box', {
+    boundingbox: [-5, 5, 5, -5],
+    axis: true,
+    grid: true,
+    keepaspectratio: true,
+    showNavigation: true
+  });
+
+  // どちらか一方の描画
+  const A = board.create('circle', [[-1, 0], 1], { fillColor: 'lightblue' });
+  const B = board.create('circle', [[1, 0], 1], { fillColor: 'lightgreen' });
+  const AorB = board.create('polygon', [A.point1, A.point2, B.point2, B.point1], { fillColor: 'orange' });
+
+  // 少なくとも一方の描画
+  const A2 = board.create('circle', [[-1, 0], 1], { fillColor: 'lightblue' });
+  const B2 = board.create('circle', [[1, 0], 1], { fillColor: 'lightgreen' });
+  const AorB2 = board.create('polygon', [A2.point1, A2.point2, B2.point2, B2.point1], { fillColor: 'orange' });
+
+}
+// 【場合の数と確率】「同様に確からしい」の意味をjsxgraphで描画する関数
+// const fn_5 = () => 
+// 【場合の数と確率】「条件つき確率」と「確率の乗法定理」の関係をjsxgraphで描画する関数
+// const fn_6 = () => 
+// 【場合の数と確率】余事象を使った解き方をjsxgraphで描画する関数
+// const fn_7 = () => 
+// 【場合の数と確率】倍数の個数の求め方をjsxgraphで描画する関数
+const fn_8 = () => {
+    // JSXGraphの初期化
+    const board = JXG.JSXGraph.initBoard('box', {
+      boundingbox: [-10, 10, 10, -10],
+      axis: true,
+    });
+
+// nが正の整数の場合:
+  // nの倍数の個数 = floor(b / n) - floor((a - 1) / n)
+  // (floorを無しにすると、nの倍数の個数 = b / n - (a - 1) / n
+// nが負の整数の場合:
+  // nの倍数の個数 = floor((a - 1) / n) - floor(b / n)
+  // (floorを無しにすると、nの倍数の個数 = (a - 1) / n - b / n
+// nとは何か: nは倍数
+// aとは何か: aは区間の始点
+// bとは何か: bは区間の終点
+
+
+const multiplesOf2 = Array.from({ length: 11 }, (_, i) => i - 10).filter(i => i % 2 === 0).map(i => board.create('point', [i, 0], { opacity: 0.2, size: 3, fillColor: 'black' }));
+const multiplesOf3 = Array.from({ length: 7 }, (_, i) => i - 3).map(i => board.create('point', [i * 3, 0], { opacity: 0.6, size: 6, fillColor: 'green' }));
+const multiplesOf2And3 = Array.from({ length: 4 }, (_, i) => i - 2).map(i => board.create('point', [i * 6, 0], { opacity: 1, size: 12, fillColor: 'orange' }));
+
+}
+
+  
+// 【場合の数と確率】区別がない組分けをjsxgraphで描画する関数
+const fn_9 = () => {
+    // JSXGraphの初期化
+    const board = JXG.JSXGraph.initBoard('box', {
+      boundingbox: [-10, 10, 10, -10],
+      axis: true,
+    });
+
+    // 玉の描画
+    const balls = [
+      board.create('point', [-5, 0], { size: 3, fillColor: 'red' }),
+      board.create('point', [0, 0], { size: 3, fillColor: 'green' }),
+      board.create('point', [5, 0], { size: 3, fillColor: 'blue' }),
+    ];
+
+    // 箱の描画
+    const boxes = [
+      board.create('polygon', [[-8, -3], [-8, 3], [-3, 3], [-3, -3]], { fillColor: 'gray' }),
+      board.create('polygon', [[3, -3], [3, 3], [8, 3], [8, -3]], { fillColor: 'gray' }),
+    ];
+
+    // 組分けの描画
+    const combinations = [
+      [balls[0], balls[1]],
+      [balls[0], balls[2]],
+      [balls[1], balls[2]],
+    ];
+    const boxesWithBalls = combinations.map(([ball1, ball2]) => {
+      const boxIndex = Math.floor(Math.random() * 2);
+      const box = boxes[boxIndex];
+      const x = box.borders[0].X() + Math.random() * (box.borders[1].X() - box.borders[0].X());
+      const y = box.borders[0].Y() + Math.random() * (box.borders[2].Y() - box.borders[0].Y());
+      return board.create('point', [x, y], { size: 3, fillColor: ball1.visProp.fillColor });
+    });
+
+}
+// 【場合の数と確率】和の法則と積の法則の使い分けをjsxgraphで描画する関数
+// const fn_10 = () => 
+// 【場合の数と確率】和の法則と積の法則の使い分けについてをjsxgraphで描画する関数
+// const fn_11 = () => 
+// 【場合の数と確率】和の法則と積の法則の使い分けの仕方をjsxgraphで描画する関数
+// const fn_12 = () => 
+// 【場合の数と確率】問題文の意味の取り方についてをjsxgraphで描画する関数
+// const fn_13 = () => 
+// 【場合の数と確率】排反事象と独立試行の違いをjsxgraphで描画する関数
+// const fn_14 = () => 
+// 【場合の数と確率】組分けの問題の見分け方をjsxgraphで描画する関数
+// const fn_15 = () => 
+// 【場合の数と確率】順列と組合せの見分け方をjsxgraphで描画する関数
+// const fn_16 = () => 
+// 【場合の数と確率】P_A（Ｂ）とP（A∩B）の違いをjsxgraphで描画する関数
+// const fn_17 = () => 
+// 【場合の数と確率】条件つき確率の解き方についてをjsxgraphで描画する関数
+// const fn_18 = () => 
+// 【場合の数と確率】確率の乗法定理についてをjsxgraphで描画する関数
+// const fn_19 = () => 
+// 【場合の数と確率】確率の使い分けについてをjsxgraphで描画する関数
+// const fn_20 = () => 
+
+// (1) 𝑥2−4𝑥+4<0
+// (2) −𝑥2+4𝑥−4≦0
+// (3) 𝑥2−4𝑥+4≦0
+// (4) −𝑥2+4𝑥−4<0
+const fn_21 = () => {
+
+  const board = JXG.JSXGraph.initBoard('box', {
+    boundingbox: [-10, 10, 10, -10],
+    axis: true,
+  });
+
+    // input:numberの値を代入して、その値を返し resultをjsxgraphで描画する
+      // (1) 𝑥2−4𝑥+4<0
+      // この式を解くと、(𝑥−2)2<0となる。
+      // JSXGraphで描画すると、(𝑥−2)2=0のとき、y=0となる。
+  const fn_21_1 = (x) => {
+    // 𝑥2−4𝑥+4<0
+  // この式を下記のコードでjsxgraphで描画
+  // resultは結果が0未満になるようなxの値を返す
+  // let result = (x) => (x**2 - 4*x + 4) < 0 ? [x => x**2 - 4*x + 4] : null;
+    // const f = board.create('functiongraph', result(x));
+    const f = board.create('functiongraph', [x => x**2 - 4*x + 4]);
+    // (𝑥−2)2<0となる。
+    // JSXGraphで描画すると、(𝑥−2)2=0のとき、y=0となる。
+    const f2 = board.create('functiongraph', [x => (x-2)**2]);
+
+    // y=0となるグラフ
+    
+    // 線を太くする
+    f.setAttribute({strokeWidth: 30});
+    // f2も同様に太くする
+    // f2.setAttribute({strokeWidth: 0});
+
+
+
+    // つまり、不等式𝑥2−4𝑥+4<0を満たす実数の解は存在しません。
+    // :ja 因数分解
+    // :en factorization
+
+
+  }
+  fn_21_1(Number(document.getElementById('input_x').value));
+
+  // (2) −𝑥2+4𝑥−4≦0
+  const fn_21_2 = (x) => {
+  // −𝑥2+4𝑥−4≦0
+  // この式を下記のコードでjsxgraphで描画
+  const f = board.create('functiongraph', [x => -(x**2) + 4*x - 4]);
+  // (𝑥−2)2<0となる。
+  // JSXGraphで描画すると、(𝑥−2)2=0のとき、y=0となる。
+  const f2 = board.create('functiongraph', [x => -((x-2)**2)]);
+  // JSXGraphで描画すると、(𝑥−2)2=0のとき、y=0となる。
+  const f3 = board.create('functiongraph', [x => 0]);
+
+  // よって不等式の解は、−𝑥2+4𝑥−4≦0のとき、𝑥=2となる。
+  // 「𝑥=𝛼 以外のすべての実数」を表すときは、𝑥≠𝛼と表す。
+  // よって、−𝑥2+4𝑥−4≦0のとき、𝑥≠2となる。
+  }
+  fn_21_2(Number(document.getElementById('input_x').value));
+
+  // (3) 𝑥2−4𝑥+4≦0
+  const fn_21_3 = (x) => {
+  // 𝑥2−4𝑥+4≦0
+  // この式を下記のコードでjsxgraphで描画
+  const f = board.create('functiongraph', [x => x**2 - 4*x + 4]);
+  // (𝑥−2)2<0となる。
+  // JSXGraphで描画すると、(𝑥−2)2=0のとき、y=0となる。
+  const f2 = board.create('functiongraph', [x => (x-2)**2]);
+  // JSXGraphで描画すると、(𝑥−2)2=0のとき、y=0となる。
+  const f3 = board.create('functiongraph', [x => 0]);
+  // 線を太くして、色を変える
+  f.setAttribute({
+    strokeWidth: 5,
+    strokeColor: 'red',
+  });
+
+  // 「解なし」を表すときは、𝑥=𝛼と表す。
+
+
+  }
+  fn_21_3(Number(document.getElementById('input_x').value));
+
+  const fn_21_4 = (x) => {
+    // (4) −𝑥2+4𝑥−4<0
+  const f = board.create('functiongraph', [x => -(x**2) + 4*x - 4]);
+  // (𝑥−2)2<0となる。
+  // JSXGraphで描画すると、(𝑥−2)2=0のとき、y=0となる。
+  const f2 = board.create('functiongraph', [x => -((x-2)**2)]);
+  // JSXGraphで描画すると、(𝑥−2)2=0のとき、y=0となる。
+  const f3 = board.create('functiongraph', [x => 0]);
+  // 線を太くして、色を変える
+  f.setAttribute({
+    strokeWidth: 10,
+    strokeColor: 'yellow',
+    opacity: 0.5,
+  });
+  }
+  fn_21_4(Number(document.getElementById('input_x').value));
+
+
+  // :ja 絶対不等式
+  // :en absolute inequality
+  // 𝑥2−𝑘𝑥+𝑘+3>0
+  // 例題: kの値の範囲を求めよ
+  // 解答: k<−1∨k>3
+  // 二次関数で言い換えると: 𝑦=𝑥2−𝑘𝑥+𝑘+3
+
+  const fn_21_5 = (x, k) => {
+    // 𝑥2−𝑘𝑥+𝑘+3>0
+    // この式を下記のコードでjsxgraphで描画
+    const f = board.create('functiongraph', [x => x**2 - k*x + k + 3]);
+    // (𝑥−2)2<0となる。
+    // JSXGraphで描画すると、(𝑥−2)2=0のとき、y=0となる。
+    const f2 = board.create('functiongraph', [x => (x-2)**2]);
+    // JSXGraphで描画すると、(𝑥−2)2=0のとき、y=0となる。
+    const f3 = board.create('functiongraph', [x => 0]);
+    // 線を太くして、色を変える
+    f.setAttribute({
+      strokeWidth: 10,
+      // 今まで使ってない色
+      strokeColor: 'green',
+      opacity: 0.5,
+    });
+  }
+  fn_21_5(Number(document.getElementById('input_x').value), Number(document.getElementById('input_k').value));
+
+  const fn_21_6 = ()=>{
+    // factorization with jsxgraph
+
+  }
+
+}
+
+
+
+fn_21();
+
+// inputの値が変わったら、fn_21を実行する
+document.querySelectorAll('input').forEach((input) => {
+  input.addEventListener('change', () => {
+    fn_21();
+  });
+});
+
+
+</script>
+</html>
