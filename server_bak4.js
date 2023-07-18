@@ -37,106 +37,99 @@ const collect_value_for_test = (Prop, Val) => {
 // const show_collect_value_for_test = () => test_mode() === true ? console.table(collect_value) : null;
 
 
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////// ---------validation--------- /////////////////////////////////////////////////
+
 // all_validation_checking_client_server_bothという名前のobjectを作成して、その中に、それぞれのvalidation_checkingの関数を入れていく
+const all_validation_checking_client_server_both_fn = () =>{
 
-        const error_check_insert_tag = (tag) => {
-
-            const reserved_words = ['SELECT', 'FROM', 'WHERE', 'INSERT', 'DELETE', 'UPDATE', 'DROP', 'ALTER', 'CREATE', 'TABLE', 'INTO', 'VALUES', 'AND', 'OR', 'NOT', 'NULL', 'TRUE', 'FALSE'];
-            // 空白を含むかチェックする1行の関数。大文字の空白もチェックする。含まれていたらtrueを返す
-            const checkForSpaces = (tag) => [' ', '　'].some((space) => tag.includes(space));
-            // 記号が含まれているかチェックする1行の関数。含まれていたらtrueを返す
-            const checkForSymbols = (tag) => {
-                const symbols = ['-', '#', '!', '$', '@', '%', '^', '&', '*', '(', ')', '_', '+', '|', '~', '=', '`', '{', '}', '[', ']', ':', '"', ';', '\'', '<', '>', '?', ',', '.', '/'];
-                return symbols.some((symbol) => tag.includes(symbol));
-            };
-            switch (true) {
-                case tag === undefined: return 'tagが空です'; break;
-                case checkForSpaces(tag): return '空白を含む場合はエラー'; break;
-                case checkForSymbols(tag): return '記号を含む場合はエラー'; break;
-                case tag.length > 7: return '7文字以上はエラー'; break;
-                case reserved_words.includes(tag): return 'SQLの予約語を含む場合はエラー'; break;
-                default: return 'OK'; break;
-            }
+    const error_check_insert_tag = (tag) => {
+    
+        const reserved_words = ['SELECT', 'FROM', 'WHERE', 'INSERT', 'DELETE', 'UPDATE', 'DROP', 'ALTER', 'CREATE', 'TABLE', 'INTO', 'VALUES', 'AND', 'OR', 'NOT', 'NULL', 'TRUE', 'FALSE'];
+        // 空白を含むかチェックする1行の関数。大文字の空白もチェックする。含まれていたらtrueを返す
+        const checkForSpaces = (tag) => [' ', '　'].some((space) => tag.includes(space));
+        // 記号が含まれているかチェックする1行の関数。含まれていたらtrueを返す
+        const checkForSymbols = (tag) => {
+            const symbols = ['-', '#', '!', '$', '@', '%', '^', '&', '*', '(', ')', '_', '+', '|', '~', '=', '`', '{', '}', '[', ']', ':', '"', ';', '\'', '<', '>', '?', ',', '.', '/'];
+            return symbols.some((symbol) => tag.includes(symbol));
         };
-        const error_check_insert_comment = (comment, DATA_LIMIT) => {
-
-            const reserved_words = ['SELECT', 'FROM', 'WHERE', 'INSERT', 'DELETE', 'UPDATE', 'DROP', 'ALTER', 'CREATE', 'TABLE', 'INTO', 'VALUES', 'AND', 'OR', 'NOT', 'NULL', 'TRUE', 'FALSE'];
-            const checkForSpaces = (comment) => [' ', '　'].some((space) => comment.includes(space));
-            // 記号が含まれているかチェックする1行の関数。含まれていたらtrueを返す
-            const checkForSymbols = (comment) => {
-                const symbols = ['-', '#', '!', '$', '@', '%', '^', '&', '*', '(', ')', '_', '+', '|', '~', '=', '`', '{', '}', '[', ']', ':', '"', ';', '\'', '<', '>', '?', ',', '.', '/'];
-                return symbols.some((symbol) => comment.includes(symbol));
-            };
-            switch (true) {
-                case comment === undefined: return 'commentが空の場合はエラー'; break;
-                case comment.length > DATA_LIMIT: return 'commentの文字数がdata_limitを超える場合はエラー'; break;
-                case comment.length === 0: return '0文字の場合はエラー'; break;
-                case checkForSpaces(comment): return '空白を含む場合はエラー'; break;
-                case checkForSymbols(comment): return '記号を含む場合はエラー'; break;
-                case comment.length > 300: return '300文字以上はエラー'; break;
-                case reserved_words.includes(comment): return 'SQLの予約語を含む場合はエラー'; break;
-                default: return 'OK'; break;
-            }
+        switch (true) {
+            case tag === undefined: return 'tagが空です'; break;
+            case checkForSpaces(tag): return '空白を含む場合はエラー'; break;
+            case checkForSymbols(tag): return '記号を含む場合はエラー'; break;
+            case tag.length > 7: return '7文字以上はエラー'; break;
+            case reserved_words.includes(tag): return 'SQLの予約語を含む場合はエラー'; break;
+            default: return 'OK'; break;
         }
-        const error_check_insert_comment_reply = (comment_reply, DATA_LIMIT) => {
-
-            const reserved_words = ['SELECT', 'FROM', 'WHERE', 'INSERT', 'DELETE', 'UPDATE', 'DROP', 'ALTER', 'CREATE', 'TABLE', 'INTO', 'VALUES', 'AND', 'OR', 'NOT', 'NULL', 'TRUE', 'FALSE'];
-            const checkForSpaces = (tag) => [' ', '　'].some((space) => tag.includes(space));
-            // 記号が含まれているかチェックする1行の関数。含まれていたらtrueを返す
-            const checkForSymbols = (comment_reply) => {
-                const symbols = ['-', '#', '!', '$', '@', '%', '^', '&', '*', '(', ')', '_', '+', '|', '~', '=', '`', '{', '}', '[', ']', ':', '"', ';', '\'', '<', '>', '?', ',', '.', '/'];
-                return symbols.some((symbol) => comment_reply.includes(symbol));
-            };
-            switch (true) {
-                case comment_reply === undefined: return 'comment_replyが空の場合はエラー'; break;
-                case comment_reply.length > DATA_LIMIT: return 'comment_replyの文字数がdata_limitを超える場合はエラー'; break;
-                case comment_reply.length === 0: return '0文字の場合はエラー'; break;
-                case checkForSpaces(comment_reply): return '空白を含む場合はエラー'; break;
-                case checkForSymbols(comment_reply): return '記号を含む場合はエラー'; break;
-                case comment_reply.length > 10: return '10文字以上はエラー'; break;
-                case reserved_words.includes(comment_reply): return 'SQLの予約語を含む場合はエラー'; break;
-                default: return 'OK'; break;
-            }
+    };
+    
+    const error_check_insert_comment = (comment, DATA_LIMIT) => {
+        
+        const reserved_words = ['SELECT', 'FROM', 'WHERE', 'INSERT', 'DELETE', 'UPDATE', 'DROP', 'ALTER', 'CREATE', 'TABLE', 'INTO', 'VALUES', 'AND', 'OR', 'NOT', 'NULL', 'TRUE', 'FALSE'];
+        const checkForSpaces = (comment) => [' ', '　'].some((space) => comment.includes(space));
+        // 記号が含まれているかチェックする1行の関数。含まれていたらtrueを返す
+        const checkForSymbols = (comment) => {
+            const symbols = ['-', '#', '!', '$', '@', '%', '^', '&', '*', '(', ')', '_', '+', '|', '~', '=', '`', '{', '}', '[', ']', ':', '"', ';', '\'', '<', '>', '?', ',', '.', '/'];
+            return symbols.some((symbol) => comment.includes(symbol));
+        };
+        switch (true) {
+            case comment === undefined: return 'commentが空の場合はエラー'; break;
+            case comment.length > DATA_LIMIT: return 'commentの文字数がdata_limitを超える場合はエラー'; break;
+            case comment.length === 0: return '0文字の場合はエラー'; break;
+            case checkForSpaces(comment): return '空白を含む場合はエラー'; break;
+            case checkForSymbols(comment): return '記号を含む場合はエラー'; break;
+            case comment.length > 300: return '300文字以上はエラー'; break;
+            case reserved_words.includes(comment): return 'SQLの予約語を含む場合はエラー'; break;
+            default: return 'OK'; break;
         }
-        const error_check_insert_link = (link) => {
-
-            const WHITE_LIST_URL_ARRAY = [
-                'https://yanaka.dev/',
-                'https://www.yahoo.co.jp/',
-                'https://www.google.co.jp/',
-                'https://www.youtube.com/',
-            ];    
-            const reserved_words = ['SELECT', 'FROM', 'WHERE', 'INSERT', 'DELETE', 'UPDATE', 'DROP', 'ALTER', 'CREATE', 'TABLE', 'INTO', 'VALUES', 'AND', 'OR', 'NOT', 'NULL', 'TRUE', 'FALSE'];
-            const is_url = (url) => (/^(https?):\/\/[^\s/$.?#].[^\s]*$/i).test(url);
-            const is_include_WHITE_LIST_URL = (target_url_str) => WHITE_LIST_URL_ARRAY.some((WHITE_LIST_URL) => target_url_str.startsWith(WHITE_LIST_URL));
-
-            !is_url(link) ? console.log('URLの形式が正しくありません') : null;
-
-            switch (true) {
-                case link === undefined: return 'linkが空です'; break;
-                case reserved_words.includes(link): return 'SQLの予約語を含む場合はエラー'; break;
-                case link.length > 2000: return 'URLが長すぎます'; break;
-                case !is_url(link): return 'URLの形式が正しくありません'; break;
-                case !is_include_WHITE_LIST_URL(link): return '許可されていないURLです'; break;
-                default: return 'OK'; break;
-            }
-            // !is_url(link) ? (()=>{throw new Error('URLの形式が正しくありません')})() : null;
-            // console.log('link is' + link + '!!');
-            // return !is_url(link) ? 'URLの形式が正しくありません' : null;
+    }
+    
+    const error_check_insert_comment_reply = (comment_reply, DATA_LIMIT) => {
+        
+        const reserved_words = ['SELECT', 'FROM', 'WHERE', 'INSERT', 'DELETE', 'UPDATE', 'DROP', 'ALTER', 'CREATE', 'TABLE', 'INTO', 'VALUES', 'AND', 'OR', 'NOT', 'NULL', 'TRUE', 'FALSE'];
+        const checkForSpaces = (tag) => [' ', '　'].some((space) => tag.includes(space));
+        // 記号が含まれているかチェックする1行の関数。含まれていたらtrueを返す
+        const checkForSymbols = (comment_reply) => {
+            const symbols = ['-', '#', '!', '$', '@', '%', '^', '&', '*', '(', ')', '_', '+', '|', '~', '=', '`', '{', '}', '[', ']', ':', '"', ';', '\'', '<', '>', '?', ',', '.', '/'];
+            return symbols.some((symbol) => comment_reply.includes(symbol));
         };
-        // all_validation_checking_client_server_bothにそれぞれの関数を入れる
-        const all_validation_checking_client_server_both = {
-            'validation_insert_tag': error_check_insert_tag,
-            'validation_insert_comment': error_check_insert_comment,
-            'validation_insert_comment_reply': error_check_insert_comment_reply,
-            'validation_insert_link': error_check_insert_link,
-        };
-        // 以下のように利用する
-        // all_validation_checking_client_server_both['validation_insert_tag']('test', 10);
-////////////////////////////////////////////////// ---------validation--------- /////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        switch (true) {
+            case comment_reply === undefined: return 'comment_replyが空の場合はエラー'; break;
+            case comment_reply.length > DATA_LIMIT: return 'comment_replyの文字数がdata_limitを超える場合はエラー'; break;
+            case comment_reply.length === 0: return '0文字の場合はエラー'; break;
+            case checkForSpaces(comment_reply): return '空白を含む場合はエラー'; break;
+            case checkForSymbols(comment_reply): return '記号を含む場合はエラー'; break;
+            case comment_reply.length > 10: return '10文字以上はエラー'; break;
+            case reserved_words.includes(comment_reply): return 'SQLの予約語を含む場合はエラー'; break;
+            default: return 'OK'; break;
+        }
+    }
+    
+    const error_check_insert_link = (link) => {
+        
+        const WHITE_LIST_URL_ARRAY = [
+            'https://yanaka.dev/',
+            'https://www.yahoo.co.jp/',
+            'https://www.google.co.jp/',
+            'https://www.youtube.com/',
+        ];    
+        const reserved_words = ['SELECT', 'FROM', 'WHERE', 'INSERT', 'DELETE', 'UPDATE', 'DROP', 'ALTER', 'CREATE', 'TABLE', 'INTO', 'VALUES', 'AND', 'OR', 'NOT', 'NULL', 'TRUE', 'FALSE'];
+        const is_url = (url) => (/^(https?):\/\/[^\s/$.?#].[^\s]*$/i).test(url);
+        const is_include_WHITE_LIST_URL = (target_url_str) => WHITE_LIST_URL_ARRAY.some((WHITE_LIST_URL) => target_url_str.startsWith(WHITE_LIST_URL));
+    
+        !is_url(link) ? console.log('URLの形式が正しくありません') : null;
+    
+        switch (true) {
+            case link === undefined: return 'linkが空です'; break;
+            case reserved_words.includes(link): return 'SQLの予約語を含む場合はエラー'; break;
+            case link.length > 2000: return 'URLが長すぎます'; break;
+            case !is_url(link): return 'URLの形式が正しくありません'; break;
+            case !is_include_WHITE_LIST_URL(link): return '許可されていないURLです'; break;
+            default: return 'OK'; break;
+        }
+        // !is_url(link) ? (()=>{throw new Error('URLの形式が正しくありません')})() : null;
+        // console.log('link is' + link + '!!');
+        // return !is_url(link) ? 'URLの形式が正しくありません' : null;
+    };
+};
 
 
 function db_init2(DB) {
@@ -389,32 +382,21 @@ app.get('/read_all', (req, res) => {
             const ORDER_BY = req.query.order_by === 'ASC' ? 'ASC' : 'DESC';
             const ORDER_BY_COLUMN = req.query.order_by_column ? req.query.order_by_column : 'links.id';
             // 特定のソート項目が指定されていない場合は、links.idでソートする。ソート項目は['links.id', 'created_at', 'updated_at', 'like_count']のいずれか
-            // ['links.id', 'created_at', 'updated_at', 'like_count'].includes(req.query.order_by_column) ? null : (()=>{throw new Error('不正なクエリ')})();
-            ['links.id', 'created_at', 'updated_at'].includes(req.query.order_by_column) ? null : (()=>{throw new Error('不正なクエリ')})();
+            ['links.id', 'created_at', 'updated_at', 'like_count'].includes(req.query.order_by_column) ? null : (()=>{throw new Error('不正なクエリ')})();
 
             // req.query.tagがある場合cross tableでtagsテーブルを結合する
             const tag_join_option = req.query.tag ? ' LEFT JOIN links_tags ON links.id = links_tags.link_id LEFT JOIN tags ON links_tags.tag_id = tags.id' : '';
 
             //   `${STANDARD_READ_QUERY} ${WHERE} ORDER BY ${ORDER_BY_COLUMN} ${ORDER_BY}`
             // WHEREがある場合のSQL文
-            // const STANDARD_READ_QUERY_1 = `
-            // SELECT
-            // links.id AS id, links.link AS link, links.created_at AS created_at, links.updated_at AS updated_at,
-            // users.id AS user_id, users.username AS username,
-            // (SELECT COUNT(*) FROM likes WHERE likes.link_id = links.id) AS like_count
-            // FROM links
-            // LEFT JOIN users ON links.user_id = users.id
-            // LEFT JOIN likes ON links.id = likes.link_id`
-            // + tag_join_option
-            // + WHERE
-            // + ' ORDER BY @order_by_column ' + ORDER_BY
-            // ;
             const STANDARD_READ_QUERY_1 = `
             SELECT
             links.id AS id, links.link AS link, links.created_at AS created_at, links.updated_at AS updated_at,
-            users.id AS user_id, users.username AS username
+            users.id AS user_id, users.username AS username,
+            (SELECT COUNT(*) FROM likes WHERE likes.link_id = links.id) AS like_count
             FROM links
-            LEFT JOIN users ON links.user_id = users.id`
+            LEFT JOIN users ON links.user_id = users.id
+            LEFT JOIN likes ON links.id = likes.link_id`
             + tag_join_option
             + WHERE
             + ' ORDER BY @order_by_column ' + ORDER_BY
@@ -422,23 +404,14 @@ app.get('/read_all', (req, res) => {
 
             //   `${STANDARD_READ_QUERY} ORDER BY ${ORDER_BY_COLUMN} ${ORDER_BY}`
             // WHEREがない場合のSQL文
-            // const STANDARD_READ_QUERY_2 = `
-            // SELECT
-            // links.id AS id, links.link AS link, links.created_at AS created_at, links.updated_at AS updated_at,
-            // users.id AS user_id, users.username AS username,
-            // (SELECT COUNT(*) FROM likes WHERE likes.link_id = links.id) AS like_count
-            // FROM links
-            // LEFT JOIN users ON links.user_id = users.id
-            // LEFT JOIN likes ON links.id = likes.link_id`
-            // + tag_join_option
-            // + ' ORDER BY @order_by_column ' + ORDER_BY
-            // ;
             const STANDARD_READ_QUERY_2 = `
             SELECT
             links.id AS id, links.link AS link, links.created_at AS created_at, links.updated_at AS updated_at,
-            users.id AS user_id, users.username AS username
+            users.id AS user_id, users.username AS username,
+            (SELECT COUNT(*) FROM likes WHERE likes.link_id = links.id) AS like_count
             FROM links
-            LEFT JOIN users ON links.user_id = users.id`
+            LEFT JOIN users ON links.user_id = users.id
+            LEFT JOIN likes ON links.id = likes.link_id`
             + tag_join_option
             + ' ORDER BY @order_by_column ' + ORDER_BY
             ;
@@ -483,14 +456,7 @@ app.get('/read_all', (req, res) => {
                 LEFT JOIN links_tags ON tags.id = links_tags.tag_id
                 WHERE links_tags.link_id = ?
               `).all(parent.id);
-
-                const likes = db.prepare(`
-                    SELECT
-                    likes.id AS id
-                    FROM likes
-                    WHERE likes.link_id = ?
-                `).all(parent.id);
-
+        
               const comments = db.prepare(`
                 SELECT
                 comments.id AS id, comments.comment AS comment, comments.created_at AS created_at, comments.updated_at AS updated_at,
@@ -520,7 +486,6 @@ app.get('/read_all', (req, res) => {
               return {
                 ...parent,
                 tags,
-                likes,
                 comments_and_replies,
               };
             });
@@ -634,6 +599,27 @@ app.post('/like_increment_or_decrement', (req, res) => {
     }
 });
 
+
+
+const error_check_insert_tag = (tag) => {
+
+    const reserved_words = ['SELECT', 'FROM', 'WHERE', 'INSERT', 'DELETE', 'UPDATE', 'DROP', 'ALTER', 'CREATE', 'TABLE', 'INTO', 'VALUES', 'AND', 'OR', 'NOT', 'NULL', 'TRUE', 'FALSE'];
+    // 空白を含むかチェックする1行の関数。大文字の空白もチェックする。含まれていたらtrueを返す
+    const checkForSpaces = (tag) => [' ', '　'].some((space) => tag.includes(space));
+    // 記号が含まれているかチェックする1行の関数。含まれていたらtrueを返す
+    const checkForSymbols = (tag) => {
+        const symbols = ['-', '#', '!', '$', '@', '%', '^', '&', '*', '(', ')', '_', '+', '|', '~', '=', '`', '{', '}', '[', ']', ':', '"', ';', '\'', '<', '>', '?', ',', '.', '/'];
+        return symbols.some((symbol) => tag.includes(symbol));
+    };
+    switch (true) {
+        case tag === undefined: return 'tagが空です'; break;
+        case checkForSpaces(tag): return '空白を含む場合はエラー'; break;
+        case checkForSymbols(tag): return '記号を含む場合はエラー'; break;
+        case tag.length > 7: return '7文字以上はエラー'; break;
+        case reserved_words.includes(tag): return 'SQLの予約語を含む場合はエラー'; break;
+        default: return 'OK'; break;
+    }
+};
 // tagにデータをレコード挿入するエンドポイント
 // 既に存在する場合は、既存のタグを返す
 // 存在しない場合は、新規にタグを作成して返す
@@ -753,8 +739,7 @@ collect_value_for_test('__/insert_tag__req.body.tag', req.body.tag);
 collect_value_for_test('__/insert_tag__req.body.link_id', req.body.link_id);
 
 console.log(req.body.tag);
-    // const error_check_result = error_check_insert_tag(req.body.tag);
-    const error_check_result = all_validation_checking_client_server_both['validation_insert_tag'](req.body.tag);
+    const error_check_result = error_check_insert_tag(req.body.tag);
     console.log(error_check_result);
     error_check_result === 'OK' ? null : (()=>{throw new Error(error_check_result)})();
     const user = get_user_with_permission(req);
@@ -805,12 +790,32 @@ app.post('/get_tags_for_autocomplete', (req, res) => {
 // commentの文字数はuser_permissionのdata_limitに依存する。commentの文字数がdata_limitを超える場合はエラー
 // 空の場合はエラー。記号を含む場合はエラー。空白を含む場合はエラー。SQLの予約語を含む場合はエラー。
 // 300文字以上はエラー。既に同じcommentが存在する場合はエラー
+const error_check_insert_comment = (comment, DATA_LIMIT) => {
+
+    const reserved_words = ['SELECT', 'FROM', 'WHERE', 'INSERT', 'DELETE', 'UPDATE', 'DROP', 'ALTER', 'CREATE', 'TABLE', 'INTO', 'VALUES', 'AND', 'OR', 'NOT', 'NULL', 'TRUE', 'FALSE'];
+    const checkForSpaces = (comment) => [' ', '　'].some((space) => comment.includes(space));
+    // 記号が含まれているかチェックする1行の関数。含まれていたらtrueを返す
+    const checkForSymbols = (comment) => {
+        const symbols = ['-', '#', '!', '$', '@', '%', '^', '&', '*', '(', ')', '_', '+', '|', '~', '=', '`', '{', '}', '[', ']', ':', '"', ';', '\'', '<', '>', '?', ',', '.', '/'];
+        return symbols.some((symbol) => comment.includes(symbol));
+    };
+    switch (true) {
+        case comment === undefined: return 'commentが空の場合はエラー'; break;
+        case comment.length > DATA_LIMIT: return 'commentの文字数がdata_limitを超える場合はエラー'; break;
+        case comment.length === 0: return '0文字の場合はエラー'; break;
+        case checkForSpaces(comment): return '空白を含む場合はエラー'; break;
+        case checkForSymbols(comment): return '記号を含む場合はエラー'; break;
+        case comment.length > 300: return '300文字以上はエラー'; break;
+        case reserved_words.includes(comment): return 'SQLの予約語を含む場合はエラー'; break;
+        default: return 'OK'; break;
+    }
+}
 app.post('/insert_comment', (req, res) => {
     try {
         const user = get_user_with_permission(req);
         user || user.commentable ? null : (()=>{throw new Error('権限がありません')})();
 
-        const error_check_result = all_validation_checking_client_server_both['validation_insert_comment'](req.body.comment, user.data_limit);
+        const error_check_result = error_check_insert_comment(req.body.comment, user.data_limit);
         error_check_result === 'OK' ? null : (()=>{throw new Error(error_check_result)})();
 
         db.prepare(`SELECT COUNT(*) AS count FROM comments WHERE user_id = ? AND link_id = ?`).get(user.user_id, req.body.link_id).count > 0 ? (()=>{throw new Error('既に同じcommentが存在する場合はエラー')})() : null;
@@ -862,12 +867,32 @@ app.post('/delete_comment', (req, res) => {
 // comment_replyの文字数はuser_permissionのdata_limitに依存する。comment_replyの文字数がdata_limitを超える場合はエラー
 // 空の場合はエラー。記号を含む場合はエラー。空白を含む場合はエラー。SQLの予約語を含む場合はエラー。
 // 10文字以上はエラー。既に同じcomment_replyが存在する場合はエラー
+const error_check_insert_comment_reply = (comment_reply, DATA_LIMIT) => {
+
+    const reserved_words = ['SELECT', 'FROM', 'WHERE', 'INSERT', 'DELETE', 'UPDATE', 'DROP', 'ALTER', 'CREATE', 'TABLE', 'INTO', 'VALUES', 'AND', 'OR', 'NOT', 'NULL', 'TRUE', 'FALSE'];
+    const checkForSpaces = (tag) => [' ', '　'].some((space) => tag.includes(space));
+    // 記号が含まれているかチェックする1行の関数。含まれていたらtrueを返す
+    const checkForSymbols = (comment_reply) => {
+        const symbols = ['-', '#', '!', '$', '@', '%', '^', '&', '*', '(', ')', '_', '+', '|', '~', '=', '`', '{', '}', '[', ']', ':', '"', ';', '\'', '<', '>', '?', ',', '.', '/'];
+        return symbols.some((symbol) => comment_reply.includes(symbol));
+    };
+    switch (true) {
+        case comment_reply === undefined: return 'comment_replyが空の場合はエラー'; break;
+        case comment_reply.length > DATA_LIMIT: return 'comment_replyの文字数がdata_limitを超える場合はエラー'; break;
+        case comment_reply.length === 0: return '0文字の場合はエラー'; break;
+        case checkForSpaces(comment_reply): return '空白を含む場合はエラー'; break;
+        case checkForSymbols(comment_reply): return '記号を含む場合はエラー'; break;
+        case comment_reply.length > 10: return '10文字以上はエラー'; break;
+        case reserved_words.includes(comment_reply): return 'SQLの予約語を含む場合はエラー'; break;
+        default: return 'OK'; break;
+    }
+}
 app.post('/insert_comment_reply', (req, res) => {
     try {
         const user = get_user_with_permission(req);
         user || user.commentable ? null : (()=>{throw new Error('権限がありません')})();
 
-        const error_check_result = all_validation_checking_client_server_both['validation_insert_comment_reply'](req.body.comment_reply, user.data_limit);
+        const error_check_result = error_check_insert_comment_reply(req.body.comment_reply, user.data_limit);
         error_check_result === 'OK'
             ? null
             : (()=>{throw new Error(error_check_result)})();
@@ -990,6 +1015,32 @@ app.post('/delete_comment_reply', (req, res) => {
 
 
 
+const error_check_insert_link = (link) => {
+
+    const WHITE_LIST_URL_ARRAY = [
+        'https://yanaka.dev/',
+        'https://www.yahoo.co.jp/',
+        'https://www.google.co.jp/',
+        'https://www.youtube.com/',
+    ];    
+    const reserved_words = ['SELECT', 'FROM', 'WHERE', 'INSERT', 'DELETE', 'UPDATE', 'DROP', 'ALTER', 'CREATE', 'TABLE', 'INTO', 'VALUES', 'AND', 'OR', 'NOT', 'NULL', 'TRUE', 'FALSE'];
+    const is_url = (url) => (/^(https?):\/\/[^\s/$.?#].[^\s]*$/i).test(url);
+    const is_include_WHITE_LIST_URL = (target_url_str) => WHITE_LIST_URL_ARRAY.some((WHITE_LIST_URL) => target_url_str.startsWith(WHITE_LIST_URL));
+
+    !is_url(link) ? console.log('URLの形式が正しくありません') : null;
+
+    switch (true) {
+        case link === undefined: return 'linkが空です'; break;
+        case reserved_words.includes(link): return 'SQLの予約語を含む場合はエラー'; break;
+        case link.length > 2000: return 'URLが長すぎます'; break;
+        case !is_url(link): return 'URLの形式が正しくありません'; break;
+        case !is_include_WHITE_LIST_URL(link): return '許可されていないURLです'; break;
+        default: return 'OK'; break;
+    }
+    // !is_url(link) ? (()=>{throw new Error('URLの形式が正しくありません')})() : null;
+    // console.log('link is' + link + '!!');
+    // return !is_url(link) ? 'URLの形式が正しくありません' : null;
+};
 // linkにデータをレコード挿入するエンドポイント
 // 正しいリンクが挿入されたときに200を返しresultをjsonで返す
 // リンクが空のときに400 Bad Requestを返す
@@ -1002,7 +1053,7 @@ app.post('/delete_comment_reply', (req, res) => {
 // ユーザーが書き込み権限を持っていないときに400 Bad Requestを返す
 app.post('/insert_link', (req, res) => {
     try {
-        const error_check_result = all_validation_checking_client_server_both['validation_insert_link'](req.body.link);
+        const error_check_result = error_check_insert_link(req.body.link);
         console.log(error_check_result);
         error_check_result === 'OK' ? null : (()=>{throw new Error(error_check_result)})();
 
@@ -1057,3 +1108,13 @@ app.post('/get_collect_value_for_test', (req, res) => {
     }
 });
 
+
+// all_validation_checking_client_server_bothにそれぞれの関数を入れる
+const all_validation_checking_client_server_both = {
+    'validation_insert_tag': error_check_insert_tag,
+    'validation_insert_comment': error_check_insert_comment,
+    'validation_insert_comment_reply': error_check_insert_comment_reply,
+    'validation_insert_link': error_check_insert_link,
+};
+// 以下のように利用する
+// all_validation_checking_client_server_both['validation_insert_tag']('test', 10);
