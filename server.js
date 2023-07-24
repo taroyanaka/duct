@@ -401,7 +401,7 @@ app.get('/read_all', (req, res) => {
             const STANDARD_READ_QUERY_2 = 'SELECT links.id AS id, links.link AS link, links.created_at AS created_at, links.updated_at AS updated_at, users.id AS user_id, users.username AS username FROM links LEFT JOIN users ON links.user_id = users.id'
                 + tag_join_option + ' ORDER BY ' + ORDER_BY_COLUMN + ' ' + ORDER_BY + ';';
 
-            // WHEREがtruthyなら、query_type: 1を返す。WHEREがfalsyなら、query_type: 2を返す
+            // WHEREがtruthy(WHEREがnullではない)なら、query_type: 1を返す。WHEREがfalsyなら、query_type: 2を返す
             const QUERY_WITH_PARAM_OBJ =
                 WHERE
                     ? {query_type: 1, query: STANDARD_READ_QUERY_1, tag: REQ_TAG, user: USER}
