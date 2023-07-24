@@ -388,24 +388,53 @@ app.get('/read_all', (req, res) => {
 
             const ORDER_BY = req.query.order_by === 'ASC' ? 'ASC' : 'DESC';
             const ORDER_BY_COLUMN = req.query.order_by_column ? req.query.order_by_column : 'id';
-            // 特定のソート項目が指定されていない場合は、links.idでソートする。ソート項目は['id', 'created_at', 'updated_at']のいずれか
+            // 特定のソート項目が指定されていない場合は、links.idでソートする。ソート項目は['links.id', 'created_at', 'updated_at', 'like_count']のいずれか
+            // ['links.id', 'created_at', 'updated_at', 'like_count'].includes(req.query.order_by_column) ? null : (()=>{throw new Error('不正なクエリ')})();
             ['id', 'created_at', 'updated_at'].includes(req.query.order_by_column) ? null : (()=>{throw new Error('不正なクエリ')})();
 
             // req.query.tagがある場合cross tableでtagsテーブルを結合する
             const tag_join_option = req.query.tag ? ' LEFT JOIN links_tags ON links.id = links_tags.link_id LEFT JOIN tags ON links_tags.tag_id = tags.id' : '';
 
-            // https://gist.github.com/taroyanaka/046ebfeb3ef9e47bc403b25220f571bd
+            //   `${STANDARD_READ_QUERY} ${WHERE} ORDER BY ${ORDER_BY_COLUMN} ${ORDER_BY}`
+            // WHEREがある場合のSQL文
+            // const STANDARD_READ_QUERY_1 = `
+            // SELECT
+            // links.id AS id, links.link AS link, links.created_at AS created_at, links.updated_at AS updated_at,
+            // users.id AS user_id, users.username AS username,
+            // (SELECT COUNT(*) FROM likes WHERE likes.link_id = links.id) AS like_count
+            // FROM links
+            // LEFT JOIN users ON links.user_id = users.id
+            // LEFT JOIN likes ON links.id = likes.link_id`
+            // + tag_join_option
+            // + WHERE
+            // + ' ORDER BY @order_by_column ' + ORDER_BY
+            // ;
             const STANDARD_READ_QUERY_1 = 'SELECT links.id AS id, links.link AS link, links.created_at AS created_at, links.updated_at AS updated_at, users.id AS user_id, users.username AS username FROM links LEFT JOIN users ON links.user_id = users.id '
                 + tag_join_option + WHERE + ' ORDER BY ' + ORDER_BY_COLUMN + ' ' + ORDER_BY + ';';
 
+            //   `${STANDARD_READ_QUERY} ORDER BY ${ORDER_BY_COLUMN} ${ORDER_BY}`
+            // WHEREがない場合のSQL文
+            // const STANDARD_READ_QUERY_2 = `
+            // SELECT
+            // links.id AS id, links.link AS link, links.created_at AS created_at, links.updated_at AS updated_at,
+            // users.id AS user_id, users.username AS username,
+            // (SELECT COUNT(*) FROM likes WHERE likes.link_id = links.id) AS like_count
+            // FROM links
+            // LEFT JOIN users ON links.user_id = users.id
+            // LEFT JOIN likes ON links.id = likes.link_id`
+            // + tag_join_option
+            // + ' ORDER BY ' + ORDER_BY_COLUMN + ' ' + ORDER_BY
+            // ;
             const STANDARD_READ_QUERY_2 = 'SELECT links.id AS id, links.link AS link, links.created_at AS created_at, links.updated_at AS updated_at, users.id AS user_id, users.username AS username FROM links LEFT JOIN users ON links.user_id = users.id'
                 + tag_join_option + ' ORDER BY ' + ORDER_BY_COLUMN + ' ' + ORDER_BY + ';';
 
-            // WHEREがtruthyなら、query_type: 1を返す。WHEREがfalsyなら、query_type: 2を返す
-            const QUERY_WITH_PARAM_OBJ =
-                WHERE
-                    ? {query_type: 1, query: STANDARD_READ_QUERY_1, tag: REQ_TAG, user: USER}
-                    : {query_type: 2, query: STANDARD_READ_QUERY_2};
+            // console.log({query_type: 1, query: STANDARD_READ_QUERY_1, order_by_column: ORDER_BY_COLUMN, tag: REQ_TAG, user: USER});
+            // console.log({query_type: 2, query: STANDARD_READ_QUERY_2, order_by_column: ORDER_BY_COLUMN});
+
+            const QUERY_WITH_PARAM_OBJ = WHERE
+                // ? {query_type: 1, query: STANDARD_READ_QUERY_1, order_by_column: ORDER_BY_COLUMN, tag: REQ_TAG, user: USER}
+                ? {query_type: 1, query: STANDARD_READ_QUERY_1, tag: REQ_TAG, user: USER}
+                : {query_type: 2, query: STANDARD_READ_QUERY_2};
 
                 // console.log(QUERY_WITH_PARAM_OBJ);
             return QUERY_WITH_PARAM_OBJ;
@@ -414,21 +443,25 @@ app.get('/read_all', (req, res) => {
         }
     };
 
-    // https://gist.github.com/taroyanaka/046ebfeb3ef9e47bc403b25220f571bd
     const QUERY_WITH_PARAM_OBJ = read_query(req);
-    const pre_result = 
-        QUERY_WITH_PARAM_OBJ.query_type === 1
-            ?
-                db.prepare(
-                    QUERY_WITH_PARAM_OBJ.query
-                ).all(
-                {
-                    tag: QUERY_WITH_PARAM_OBJ.tag,
-                    user: QUERY_WITH_PARAM_OBJ.user
-                }
-                )
-            :
-                db.prepare(QUERY_WITH_PARAM_OBJ.query).all();
+    console.log(QUERY_WITH_PARAM_OBJ);
+      const pre_result = 
+            QUERY_WITH_PARAM_OBJ.query_type === 1
+                ?
+                    db.prepare(
+                        QUERY_WITH_PARAM_OBJ.query
+                    ).all(
+                        {
+                        tag: QUERY_WITH_PARAM_OBJ.tag,
+                        user: QUERY_WITH_PARAM_OBJ.user
+                        // ,
+                        // order_by_column: QUERY_WITH_PARAM_OBJ.order_by_column
+                        }
+                    )
+                :
+                    db.prepare(QUERY_WITH_PARAM_OBJ.query).all();
+
+            console.log(pre_result);
 
             const response = pre_result.map(parent => {
               const tags = db.prepare(`
