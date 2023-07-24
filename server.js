@@ -407,7 +407,6 @@ app.get('/read_all', (req, res) => {
                     ? {query_type: 1, query: STANDARD_READ_QUERY_1, tag: REQ_TAG, user: USER}
                     : {query_type: 2, query: STANDARD_READ_QUERY_2};
 
-                // console.log(QUERY_WITH_PARAM_OBJ);
             return QUERY_WITH_PARAM_OBJ;
         } catch (error) {
             (()=>{throw new Error(error.message)})();
