@@ -1,3 +1,5 @@
+// 2024-05-14 as a manga app
+
 // https://marketplace.visualstudio.com/items?itemName=emeraldwalk.RunOnSave
 // in vscode's settings.json
 
