@@ -1154,6 +1154,7 @@ app.post('/delete_bookmark', (req, res) => {
 // 特定のbookmarkを追加する
 app.post('/insert_bookmark', (req, res) => {
     try {
+        console.log("insert_bookmark", req.body.tag_id);
     const user = get_user_with_permission(req);
     user || user.writable ? null : (()=>{throw new Error('権限がありません')})();
     // 同じbookmarkが存在するなら、エラーを返す
