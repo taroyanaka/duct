@@ -1,4 +1,15 @@
+-- q_as link_id, id, question, answer, created_at, updated_at
+-- f_i_bs link_id, id, fill, sentence, created_at, updated_at
+-- i_t_ns link_id, id, label, uri, created_at, updated_at
+
 -- sqlite3で全てのテーブルとそのデータを削除するクエリ
+DROP TABLE IF EXISTS user_datas;
+DROP TABLE IF EXISTS skills;
+DROP TABLE IF EXISTS skill_likes;
+
+DROP TABLE IF EXISTS bookmarks;
+
+
 DROP TABLE IF EXISTS user_permission;
 DROP TABLE IF EXISTS users;
 DROP TABLE IF EXISTS links;
@@ -9,8 +20,36 @@ DROP TABLE IF EXISTS comments;
 DROP TABLE IF EXISTS comment_replies;
 
 
--- ja: データ制限量
--- en: Data limit
+
+
+CREATE TABLE user_datas (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_name TEXT NOT NULL, -- 24 length string
+  password TEXT NOT NULL, -- hashed 12 length string, english and number
+  weight_num INTEGER NOT NULL,
+  user_type TEXT NOT NULL, -- 'company', 'customer'
+  offline_online INTEGER NOT NULL, -- 0 for offline, 1 for online
+  skills_id_array TEXT NOT NULL, -- JSON string
+  created_at DATETIME NOT NULL,
+  updated_at DATETIME NOT NULL
+  -- FOREIGN KEY (user_id) REFERENCES users(id)
+);
+
+CREATE TABLE skills (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  skill TEXT NOT NULL, -- 24 length string
+  created_at DATETIME NOT NULL,
+  updated_at DATETIME NOT NULL
+);
+
+CREATE TABLE skill_likes (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  skill_id INTEGER NOT NULL,
+  like_volume INTEGER NOT NULL,
+  created_at DATETIME NOT NULL,
+  updated_at DATETIME NOT NULL,
+  FOREIGN KEY (skill_id) REFERENCES skills(id)
+);
 
 -- ユーザーの権限のテーブル。カラムはIDはと名前と作成日と更新日を持つ。IDは自動的に増加する
 -- カラムの中には、一般ユーザー、ゲストユーザーがある
@@ -41,10 +80,25 @@ CREATE TABLE users (
   FOREIGN KEY (user_permission_id) REFERENCES user_permission(id)
 );
 
+-- usersが所有するお気に入りのtagのテーブル。IDは自動的に増加する。userのIDを外部キーとして持つ。bookmarsというテーブル名
+-- usersと1:1の関係,tagsと1:1の関係
+CREATE TABLE bookmarks (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL,
+  tag_id INTEGER NOT NULL,
+  created_at DATETIME NOT NULL,
+  updated_at DATETIME NOT NULL,
+  FOREIGN KEY (user_id) REFERENCES users(id)
+);
+
 -- linksというブログのようなサービスのテーブル。IDは自動的に増加する。userのIDを外部キーとして持つ
 CREATE TABLE links (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   link TEXT NOT NULL,
+
+  data_type TEXT NOT NULL, -- 'q_a', 'f_i_b', 'i_t_n',
+  data_json_str TEXT NOT NULL, -- JSON string
+
   user_id INTEGER NOT NULL,
   created_at DATETIME NOT NULL,
   updated_at DATETIME NOT NULL,
@@ -150,3 +204,19 @@ INSERT INTO users (user_permission_id, username, userpassword, created_at, updat
 INSERT INTO users (user_permission_id, username, userpassword, created_at, updated_at) VALUES (2, 'user2', 'user_pass2', DATETIME('now'), DATETIME('now'));
 INSERT INTO users (user_permission_id, username, userpassword, created_at, updated_at) VALUES (3, 'pro1', 'pro_pass1', DATETIME('now'), DATETIME('now'));
 INSERT INTO users (user_permission_id, username, userpassword, created_at, updated_at) VALUES (4, 'testuser', 'duct_mean_fuckst1ck', DATETIME('now'), DATETIME('now'));
+
+-- skillsテーブルにTESTという文字列のレコードを挿入する
+
+INSERT INTO skills (skill, created_at, updated_at) VALUES ('TEST', DATETIME('now'), DATETIME('now'));
+-- user_datasにadmin_userを挿入する
+-- user_name: 'admin_user'
+-- password: 'taro'
+-- weight_num: 0
+-- user_type: 'company'
+-- offline_online: 0
+-- skills_id_array: [0]
+-- created_at: now(),
+-- updated_at: now(),
+
+
+-- INSERT INTO user_datas (user_name, password, weight_num, user_type, offline_online, skills_id_array, created_at, updated_at) VALUES ('admin_user', 'taro', 0, 'company', 0, '[0]', DATETIME('now'), DATETIME('now'));

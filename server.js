@@ -1,4 +1,4 @@
-// 2024-05-14 as a manga app
+        // 2024-05-14 as a manga app
 
 // https://marketplace.visualstudio.com/items?itemName=emeraldwalk.RunOnSave
 // in vscode's settings.json
@@ -1093,6 +1093,83 @@ function allowOrigin(res){
   });
   
   
+app.post('/get_bookmarks', (req, res) => {
+    try {
+    // -- usersが所有するお気に入りのtagのテーブル。IDは自動的に増加する。userのIDを外部キーとして持つ。bookmarsというテーブル名
+    // -- usersと1:1の関係,tagsと1:1の関係
+    // CREATE TABLE bookmarks (
+    //   id INTEGER PRIMARY KEY AUTOINCREMENT,
+    //   user_id INTEGER NOT NULL,
+    //   tag_id INTEGER NOT NULL,
+    //   created_at DATETIME NOT NULL,
+    //   updated_at DATETIME NOT NULL,
+    //   FOREIGN KEY (user_id) REFERENCES users(id)
+    // );
+
+    // user_idのチェック
+    const user = get_user_with_permission(req);
+    user || user.readable ? null : (()=>{throw new Error('権限がありません')})();
+
+    // bookmarksのデータを取得する
+    const bookmarks = db.prepare(`
+        SELECT
+        bookmarks.id AS id, bookmarks.user_id AS user_id, bookmarks.tag_id AS tag_id, bookmarks.created_at AS created_at, bookmarks.updated_at AS updated_at,
+        tags.id AS tag_id, tags.tag AS tag
+        FROM bookmarks
+        LEFT JOIN tags ON bookmarks.tag_id = tags.id
+        WHERE bookmarks.user_id = ?
+    `).all(user.user_id);
+
+
+    res.status(200)
+        .json({result: 'success'
+            ,status: 200
+            ,message: bookmarks
+        });
+    } catch (error) {
+    console.log(error);
+    // error_response(res, 'ERROR: ' + error);
+    res.status(400).json({status: 400, result: 'fail', message: error.message});
+    }
+});
+
+// 特定のbookmarkを削除する
+app.post('/delete_bookmark', (req, res) => {
+    try {
+    const user = get_user_with_permission(req);
+    user || user.deletable ? null : (()=>{throw new Error('権限がありません')})();
+    // bookmarkに紐づくlike、comment、comment_replyが存在するなら、それらを削除する
+    db.prepare(`SELECT * FROM bookmarks WHERE id = ? AND user_id = ?`).get(req.body.id, user.user_id) ? db.prepare(`DELETE FROM bookmarks WHERE id = ? AND user_id = ?`).run(req.body.id, user.user_id) : null;
+
+    res.status(200)
+        .json({result: 'success'
+            ,status: 200
+        });
+    } catch (error) {
+    console.log(error);
+    res.status(400).json({status: 400, result: 'fail', message: error.message});
+    }
+});
+
+// 特定のbookmarkを追加する
+app.post('/insert_bookmark', (req, res) => {
+    try {
+    const user = get_user_with_permission(req);
+    user || user.writable ? null : (()=>{throw new Error('権限がありません')})();
+    // 同じbookmarkが存在するなら、エラーを返す
+    db.prepare(`SELECT * FROM bookmarks WHERE user_id = ? AND tag_id = ?`).get(user.user_id, req.body.tag_id) ? (()=>{throw new Error('同じbookmarkが存在します')})() : null;
+    const response = db.prepare(`INSERT INTO bookmarks (user_id, tag_id, created_at, updated_at) VALUES (?, ?, ?, ?)`).run(user.user_id, req.body.tag_id, now(), now());
+
+    res.status(200)
+        .json({result: 'success'
+            ,status: 200
+            ,message: response.lastInsertRowid
+        });
+    } catch (error) {
+    console.log(error);
+    res.status(400).json({status: 400, result: 'fail', message: error.message});
+    }
+});
   
   
   // app.get('/', (req, res) => {
